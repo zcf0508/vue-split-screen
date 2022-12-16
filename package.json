@@ -1,0 +1,64 @@
+{
+  "name": "vue-split-screen",
+  "type": "module",
+  "version": "0.0.1",
+  "packageManager": "pnpm@7.12.0",
+  "description": "",
+  "author": "zcf0508 <zcf0508@live.com>",
+  "license": "MIT",
+  "homepage": "https://github.com/zcf0508/vue-split-screen#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zcf0508/vue-split-screen.git"
+  },
+  "bugs": "https://github.com/zcf0508/vue-split-screen/issues",
+  "keywords": [],
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "*": [
+        "./dist/*",
+        "./dist/index.d.ts"
+      ]
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "unbuild",
+    "dev": "unbuild --stub",
+    "lint": "eslint .",
+    "prepublishOnly": "nr build",
+    "release": "bumpp && npm publish",
+    "start": "esno src/index.ts",
+    "test": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^18.7.18",
+    "bumpp": "^8.2.1",
+    "eslint": "^8.23.1",
+    "esno": "^0.16.3",
+    "pnpm": "^7.12.0",
+    "rimraf": "^3.0.2",
+    "typescript": "^4.8.3",
+    "unbuild": "^0.8.11",
+    "vite": "^3.1.2",
+    "vitest": "^0.23.4"
+  },
+  "dependencies": {
+    "vue": "^3.2.45",
+    "vue-router": "^4.1.6"
+  }
+}
