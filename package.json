@@ -38,8 +38,8 @@
   "scripts": {
     "build": "unbuild",
     "dev": "unbuild --stub",
-    "lint": "eslint .",
-    "prepublishOnly": "pnpm build",
+    "lint": "eslint --fix --ext .ts ./src",
+    "prepublishOnly": "pnpm lint && pnpm build",
     "release": "bumpp && npm publish",
     "start": "esno src/index.ts",
     "test": "vitest",
@@ -47,8 +47,11 @@
   },
   "devDependencies": {
     "@types/node": "^18.7.18",
+    "@typescript-eslint/eslint-plugin": "^5.46.1",
+    "@typescript-eslint/parser": "^5.46.1",
     "bumpp": "^8.2.1",
     "eslint": "^8.23.1",
+    "eslint-plugin-security": "^1.5.0",
     "esno": "^0.16.3",
     "pnpm": "^7.12.0",
     "rimraf": "^3.0.2",
