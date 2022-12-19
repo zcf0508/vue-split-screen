@@ -42,10 +42,8 @@ export const SplitScreen = defineComponent({
         
     return ()=>{
       const renderSlot = computed(() => {
-        console.log(slotQueue)
         const lastSlot = slotQueue[slotQueue.length - 2];
         if(!props.turnOn) {
-          console.log(1)
           return h(
             ScreenProxy,
             ctx.slots.default
@@ -54,7 +52,6 @@ export const SplitScreen = defineComponent({
           )
         } else {
           if(lastSlot && lastSlot.slot) {
-            console.log(2)
             return ()=>[
               h(
                 ScreenProxy,
@@ -68,7 +65,6 @@ export const SplitScreen = defineComponent({
               ),
             ]
           } else {
-            console.log(3)
             return ()=>[
               h(
                 ScreenProxy,
@@ -76,10 +72,15 @@ export const SplitScreen = defineComponent({
                   ? ctx.slots.default()
                   : undefined,
               ),
-              h(
-                ScreenProxy,
-                h(SplitPlaceholder),
-              ),
+              ctx.slots.placeholder
+                ? h(
+                  ScreenProxy,
+                  ctx.slots.placeholder(),
+                )
+                : h(
+                  ScreenProxy,
+                  h(SplitPlaceholder),
+                ),
             ]
           }
         }

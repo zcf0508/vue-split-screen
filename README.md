@@ -11,6 +11,9 @@ This library is used to create a split-screen effect of the page, so that the pa
   <router-view v-slot="{ Component }">
     <split-screen>
       <component :is="Component" />
+      <template #placeholder>
+        <!-- placehoder template -->
+      </template>
     </split-screen>
   </router-view>
 </template>
