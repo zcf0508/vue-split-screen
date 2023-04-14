@@ -44,7 +44,8 @@
     "release": "bumpp && npm publish",
     "start": "esno src/index.ts",
     "test": "vitest",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "play": "npm -C playground run dev"
   },
   "devDependencies": {
     "@types/node": "^18.7.18",
