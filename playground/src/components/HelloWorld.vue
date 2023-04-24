@@ -1,5 +1,5 @@
 <template>
-  <h1>{{ msg }}</h1>
+  <h1>{{ `${path} - ${msg}` }}</h1>
 
   <p>
     Recommended IDE setup:
@@ -25,24 +25,10 @@
   </button>
   <p class="my-2">
     <label for="number_input">
-      <input 
-        id="number_input" 
-        v-model="number"
-        w:p="l-2"
-        w:border="~ gray-100"
-        w:appearance="none" 
-        w:outline="focus:none" 
-        type="number"
-      />
+      <input id="number_input" v-model="number" w:p="l-2" w:border="~ gray-100" w:appearance="none" w:outline="focus:none"
+        type="number" />
     </label>
-    <button
-      w:m="l-2"
-      w:p="x-2"
-      w:bg="green-500"
-      w:text="white"
-      w:rounded="~"
-      @click="add"
-    >
+    <button w:m="l-2" w:p="x-2" w:bg="green-500" w:text="white" w:rounded="~" @click="add">
       ADD
     </button>
   </p>
@@ -75,7 +61,10 @@ export default defineComponent({
       counterStore.add(Number(data.number));
     }
 
-    return { ...toRefs(data), count, plus, add };
+    const route = useRoute();
+
+
+    return { ...toRefs(data), count, plus, add, path: route.path };
   },
 });
 </script>

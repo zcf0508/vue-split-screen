@@ -1,13 +1,14 @@
 import { h, VNode } from "vue"
 import { computed, watch, defineComponent, reactive, nextTick } from "vue";
-import {  useRoute } from "vue-router"
+import { RouteLocationNormalizedLoaded, RouteRecordRaw, useRoute, useRouter } from "vue-router"
 import { SplitPlaceholder } from "./SplitPlaceholder"
 import { SplitScreenProxy } from "./SplitScreenProxy"
 import { ScreenProxy } from "./ScreenProxy"
 
 type SlotQueueItem = {
-    router: string,
-    slot?: VNode[]
+  routePath: string,
+  route: RouteLocationNormalizedLoaded,
+  slot?: VNode[]
 }
 
 export const SplitScreen = defineComponent({
@@ -22,19 +23,23 @@ export const SplitScreen = defineComponent({
     const slotQueue = reactive([] as SlotQueueItem[]);
 
     const route = useRoute();
-        
+    
+    const router = useRouter()
+
     slotQueue.push({
-      router: route.path,
-      slot: ctx.slots.default ? ctx.slots.default() : undefined,
+      routePath: route.path,
+      route: JSON.parse(JSON.stringify(route)),
+      slot: ctx.slots.default?.(),
     })
 
     watch(
       () => route.path,
-      (routePath) => {
+      (val) => {
         nextTick(()=>{
           slotQueue.push({
-            router: routePath,
-            slot: ctx.slots.default ? ctx.slots.default() : undefined,
+            routePath: val,
+            route: route,
+            slot: ctx.slots.default?.(),
           })
         })
       },
@@ -43,34 +48,32 @@ export const SplitScreen = defineComponent({
     return ()=>{
       const renderSlot = computed(() => {
         const lastSlot = slotQueue[slotQueue.length - 2];
+        
         if(!props.turnOn) {
           return h(
             ScreenProxy,
-            ctx.slots.default
-              ? ctx.slots.default()
-              : undefined,
+            ctx.slots.default?.(),
           )
         } else {
           if(lastSlot && lastSlot.slot) {
             return ()=>[
               h(
                 ScreenProxy,
+                {
+                  route: lastSlot.route,
+                },
                 lastSlot.slot,
               ),
               h(
                 ScreenProxy,
-                ctx.slots.default
-                  ? ctx.slots.default()
-                  : undefined,
+                ctx.slots.default?.(),
               ),
             ]
           } else {
             return ()=>[
               h(
                 ScreenProxy,
-                ctx.slots.default
-                  ? ctx.slots.default()
-                  : undefined,
+                ctx.slots.default?.(),
               ),
               ctx.slots.placeholder
                 ? h(
