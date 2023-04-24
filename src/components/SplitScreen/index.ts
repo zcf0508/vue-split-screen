@@ -4,6 +4,7 @@ import { RouteLocationNormalizedLoaded, RouteRecordRaw, useRoute, useRouter } fr
 import { SplitPlaceholder } from "./SplitPlaceholder"
 import { SplitScreenProxy } from "./SplitScreenProxy"
 import { ScreenProxy } from "./ScreenProxy"
+import { useNavigationListener } from "../../hooks/useNavigationListener";
 
 type SlotQueueItem = {
   routePath: string,
@@ -32,18 +33,18 @@ export const SplitScreen = defineComponent({
       slot: ctx.slots.default?.(),
     })
 
-    watch(
-      () => route.path,
-      (val) => {
-        nextTick(()=>{
-          slotQueue.push({
-            routePath: val,
-            route: route,
-            slot: ctx.slots.default?.(),
-          })
+    useNavigationListener(
+      () => {
+        slotQueue.push({
+          routePath: route.path,
+          route: route,
+          slot: ctx.slots.default?.(),
         })
       },
-    );
+      () => {
+        slotQueue.pop()
+      },
+    )
         
     return ()=>{
       const renderSlot = computed(() => {
