@@ -1,4 +1,18 @@
 <template>
+  <p>
+    <!--使用 router-link 组件进行导航 -->
+    <!--通过传递 `to` 来指定链接 -->
+    <!--`<router-link>` 将呈现一个带有正确 `href` 属性的 `<a>` 标签-->
+    <router-link to="/home" class="inline-block mr-8">
+      <div class="i-ri:home-2-line h-4 w-4 mr-2 align-text-bottom"></div>
+      <span>Go to Home</span>
+    </router-link>
+
+    <router-link to="/about">
+      <div class="i-ri:lightbulb-line h-4 w-4 mr-2 align-text-bottom"></div>
+      <span>Go to About</span>
+    </router-link>
+  </p>
   <h1>{{ `${path} - ${msg}` }}</h1>
 
   <p>

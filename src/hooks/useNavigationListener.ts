@@ -6,21 +6,21 @@ interface HistoryState {
 
 let previousUrl = window.location.href;
 
-function handleNavigation(event: PopStateEvent, onForward: Function, onBack: Function) {
+function handleNavigation(event: PopStateEvent, onForward?: Function, onBack?: Function) {
   const state = event.state as HistoryState;
   const currentUrl = window.location.href;
   if (currentUrl !== previousUrl) {
     const direction = currentUrl > previousUrl ? "forward" : "back";
     if (direction === "forward") {
-      onForward(state.url);
+      onForward && onForward(state.url);
     } else {
-      onBack(state.url);
+      onBack && onBack(state.url);
     }
     previousUrl = currentUrl;
   }
 }
 
-export function useNavigationListener(onForward: Function, onBack: Function) {
+export function useNavigationListener(onForward?: Function, onBack?: Function) {
   onMounted(() => {
     window.addEventListener("popstate", (event) => handleNavigation(event, onForward, onBack));
     const currentState = { url: window.location.href };
