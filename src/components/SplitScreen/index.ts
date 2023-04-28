@@ -1,5 +1,5 @@
 import { h, VNode } from "vue"
-import { ref, computed, watch, defineComponent, reactive, nextTick, provide } from "vue";
+import { ref, computed, watch, defineComponent, reactive, nextTick, provide, unref } from "vue";
 import { RouteLocationNormalizedLoaded, RouteRecordRaw, useRoute, useRouter } from "vue-router"
 import { SplitPlaceholder } from "./SplitPlaceholder"
 import { SplitScreenProxy } from "./SplitScreenProxy"
@@ -22,13 +22,13 @@ export const SplitScreen = defineComponent({
     },
   },
   setup:(props, ctx)=>{
-    const slotQueue = reactive([] as SlotQueueItem[]);
+    const slotQueue = ref([] as SlotQueueItem[]);
 
     const route = useRoute();
     
     const router = useRouter()
 
-    slotQueue.push({
+    slotQueue.value.push({
       routePath: route.path,
       route: JSON.parse(JSON.stringify(route)),
       slot: ctx.slots.default?.(),
@@ -36,8 +36,8 @@ export const SplitScreen = defineComponent({
     const splitKey = ref(new Date().getTime())
 
     function pushRoute() {
-      if(slotQueue.length > 0 && route.path === slotQueue[slotQueue.length - 1].routePath) return
-      slotQueue.push({
+      if(slotQueue.value.length > 0 && route.path === slotQueue.value[slotQueue.value.length - 1].routePath) return
+      slotQueue.value.push({
         routePath: route.path,
         route: route,
         slot: ctx.slots.default?.(),
@@ -45,13 +45,16 @@ export const SplitScreen = defineComponent({
     }
 
     function popRoute() {
-      slotQueue.pop()
+      slotQueue.value.pop()
     }
 
     // TODO: something wrong here
     useNavigationListener(
       undefined,
-      popRoute,
+      () => {
+        popRoute()
+        popRoute()
+      },
     )
 
     provide(routerCallbackKey, {
@@ -68,7 +71,8 @@ export const SplitScreen = defineComponent({
       },
     );
 
-    watch(()=>slotQueue,()=>{
+    watch(()=>slotQueue.value,()=>{
+      // console.log(1111, unref(slotQueue.value))
       splitKey.value = new Date().getTime()
     },{
       deep: true,
@@ -78,7 +82,7 @@ export const SplitScreen = defineComponent({
     provide(rowRouterReplaceKey, router.replace)
     
     const renderSlot = computed(() => {
-      const lastSlot = slotQueue[slotQueue.length - 2];
+      const lastSlot = slotQueue.value[slotQueue.value.length - 2];
       
       if(!props.turnOn) {
         return h(

@@ -1,5 +1,5 @@
 import { h, defineComponent, provide, inject, computed, reactive, watchEffect } from "vue";
-import type { Ref } from "vue";
+import type { PropType, Ref, ComputedRef } from "vue";
 import { 
   RouteLocationNormalizedLoaded, 
   RouteRecordRaw, 
@@ -7,6 +7,7 @@ import {
   routeLocationKey, 
   routerKey, 
   useRouter, 
+  useRoute,
   RouteLocationRaw, 
 } from "vue-router"
 import { routerCallbackKey, rowRouterPushKey, rowRouterReplaceKey } from "../constants";
@@ -44,7 +45,6 @@ export const ScreenProxy = defineComponent({
       >
     }
     for (const key in START_LOCATION_NORMALIZED) {
-      // @ts-expect-error: the key matches
       reactiveRoute[key] = computed(() => routeToDisplay.value[key])
     }
 
@@ -59,17 +59,25 @@ export const ScreenProxy = defineComponent({
     const rowRouterPush = inject<Function>(rowRouterPushKey)!
     const rowRouterReplace = inject<Function>(rowRouterReplaceKey)!
 
+    const realRoute = useRoute();
+
     if (props.route) {
       const pushProxy = new Proxy(rowRouterPush, {
         apply(target, thisArg, argArray:[to: RouteLocationRaw]) {
-          routerCallback?.popRoute()
+          const r = router.resolve(argArray[0])
+          if(r.path !== realRoute.path){
+            routerCallback?.popRoute()
+          }
           return target.apply(thisArg, argArray)
         },
       })
       const replaceProxy = new Proxy(rowRouterReplace, {
         apply(target, thisArg, argArray:[to: RouteLocationRaw]) {
-          routerCallback?.popRoute()
-          routerCallback?.popRoute()
+          const r = router.resolve(argArray[0])
+          if(r.path !== realRoute.path){
+            routerCallback?.popRoute()
+            routerCallback?.popRoute()
+          }
           return target.apply(thisArg, argArray)
         },
       })
@@ -82,7 +90,10 @@ export const ScreenProxy = defineComponent({
     } else {
       const replaceProxy = new Proxy(rowRouterReplace, {
         apply(target, thisArg, argArray:[to: RouteLocationRaw]) {
-          routerCallback?.popRoute()
+          const r = router.resolve(argArray[0])
+          if(r.path !== realRoute.path){
+            routerCallback?.popRoute()
+          }
           return target.apply(thisArg, argArray)
         },
       })
