@@ -49,6 +49,7 @@
     "play:build": "npm run build && npm -C playground run build"
   },
   "devDependencies": {
+    "@types/lodash-es": "^4.17.7",
     "@types/node": "^18.7.18",
     "@typescript-eslint/eslint-plugin": "^5.46.1",
     "@typescript-eslint/parser": "^5.46.1",
@@ -64,6 +65,7 @@
     "vitest": "^0.23.4"
   },
   "dependencies": {
+    "lodash-es": "^4.17.21",
     "vue": "^3.2.45",
     "vue-router": "^4.1.6"
   }

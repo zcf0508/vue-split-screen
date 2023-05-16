@@ -6,6 +6,7 @@ import { SplitScreenProxy } from "./SplitScreenProxy"
 import { ScreenProxy } from "./ScreenProxy"
 import { useNavigationListener } from "../../hooks/useNavigationListener";
 import { routerCallbackKey, rowRouterPushKey, rowRouterReplaceKey } from "../constants";
+import { cloneDeep } from "lodash-es";
 
 type SlotQueueItem = {
   routePath: string
@@ -30,7 +31,7 @@ export const SplitScreen = defineComponent({
 
     slotQueue.value.push({
       routePath: route.path,
-      route: JSON.parse(JSON.stringify(route)),
+      route: cloneDeep(route),
       slot: ctx.slots.default?.(),
     })
     const splitKey = ref(new Date().getTime())
@@ -39,7 +40,7 @@ export const SplitScreen = defineComponent({
       if(slotQueue.value.length > 0 && route.path === slotQueue.value[slotQueue.value.length - 1].routePath) return
       slotQueue.value.push({
         routePath: route.path,
-        route: JSON.parse(JSON.stringify(route)),
+        route: cloneDeep(route),
         slot: ctx.slots.default?.(),
       })
     }
