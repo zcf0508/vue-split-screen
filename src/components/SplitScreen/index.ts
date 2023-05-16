@@ -1,5 +1,5 @@
 import { h, VNode } from "vue"
-import { ref, computed, watch, defineComponent, reactive, nextTick, provide, unref } from "vue";
+import { ref, computed, watch, defineComponent, reactive, nextTick, provide, unref, Slot } from "vue";
 import { RouteLocationNormalizedLoaded, RouteRecordRaw, useRoute, useRouter } from "vue-router"
 import { SplitPlaceholder } from "./SplitPlaceholder"
 import { SplitScreenProxy } from "./SplitScreenProxy"
@@ -10,7 +10,7 @@ import { routerCallbackKey, rowRouterPushKey, rowRouterReplaceKey } from "../con
 type SlotQueueItem = {
   routePath: string
   route: RouteLocationNormalizedLoaded
-  slot?: VNode[]
+  slot?: Slot
 }
 
 export const SplitScreen = defineComponent({
@@ -31,7 +31,7 @@ export const SplitScreen = defineComponent({
     slotQueue.value.push({
       routePath: route.path,
       route: JSON.parse(JSON.stringify(route)),
-      slot: ctx.slots.default?.(),
+      slot: ctx.slots.default,
     })
     const splitKey = ref(new Date().getTime())
 
@@ -40,7 +40,7 @@ export const SplitScreen = defineComponent({
       slotQueue.value.push({
         routePath: route.path,
         route: route,
-        slot: ctx.slots.default?.(),
+        slot: ctx.slots.default,
       })
     }
 
@@ -85,45 +85,54 @@ export const SplitScreen = defineComponent({
       const lastSlot = slotQueue.value[slotQueue.value.length - 2];
       
       if(!props.turnOn) {
-        return h(
+        return () => h(
           ScreenProxy,
-          ctx.slots.default?.(),
+          { key: splitKey.value },
+          ctx.slots,
         )
       } else {
         if(lastSlot && lastSlot.slot) {
-          return ()=>[
+          return () => [
             h(
               ScreenProxy,
               {
                 key: `${splitKey.value}-left`,
                 route: lastSlot.route,
               },
-              lastSlot.slot,
+              {
+                default: () => lastSlot.slot?.(),
+              },
             ),
             h(
               ScreenProxy,
               {
                 key: `${splitKey.value}-right`,
               },
-              ctx.slots.default?.(),
+              ctx.slots,
             ),
           ]
         } else {
-          return ()=>[
+          return () => [
             h(
               ScreenProxy,
               {
                 key: `${splitKey.value}-left`,
               },
-              ctx.slots.default?.(),
+              ctx.slots,
             ),
             ctx.slots.placeholder
               ? h(
                 ScreenProxy,
-                ctx.slots.placeholder(),
+                {
+                  key: "placeholder",
+                },
+                ctx.slots.placeholder,
               )
               : h(
                 ScreenProxy,
+                {
+                  key: "placeholder",
+                },
                 h(SplitPlaceholder),
               ),
           ]
@@ -131,12 +140,11 @@ export const SplitScreen = defineComponent({
       }
     })
 
-    return ()=>{
-      return h(
-        SplitScreenProxy,
-        renderSlot.value,
-      )
-    }
+    return () => h(
+      SplitScreenProxy,
+      {},
+      renderSlot.value,
+    )
   },
 })
 

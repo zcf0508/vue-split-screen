@@ -103,15 +103,12 @@ export const ScreenProxy = defineComponent({
       })
     }
 
-
-    return ()=>{
-      return h(
-        "div",
-        {
-          style: "width: 100%; flex: 1;",
-        },
-        ctx.slots.default?.(),
-      )
-    }
+    return () => h(
+      "div",
+      {
+        style: "width: 100%; flex: 1;",
+      },
+      ctx.slots,
+    )
   },
 })
