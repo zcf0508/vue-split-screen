@@ -1,5 +1,5 @@
 import { h, VNode } from "vue"
-import { ref, computed, watch, defineComponent, reactive, nextTick, provide, unref, Slot } from "vue";
+import { ref, computed, watch, defineComponent, reactive, nextTick, provide, unref } from "vue";
 import { RouteLocationNormalizedLoaded, RouteRecordRaw, useRoute, useRouter } from "vue-router"
 import { SplitPlaceholder } from "./SplitPlaceholder"
 import { SplitScreenProxy } from "./SplitScreenProxy"
@@ -10,7 +10,7 @@ import { routerCallbackKey, rowRouterPushKey, rowRouterReplaceKey } from "../con
 type SlotQueueItem = {
   routePath: string
   route: RouteLocationNormalizedLoaded
-  slot?: Slot
+  slot?: VNode[]
 }
 
 export const SplitScreen = defineComponent({
@@ -31,7 +31,7 @@ export const SplitScreen = defineComponent({
     slotQueue.value.push({
       routePath: route.path,
       route: JSON.parse(JSON.stringify(route)),
-      slot: ctx.slots.default,
+      slot: ctx.slots.default?.(),
     })
     const splitKey = ref(new Date().getTime())
 
@@ -39,8 +39,8 @@ export const SplitScreen = defineComponent({
       if(slotQueue.value.length > 0 && route.path === slotQueue.value[slotQueue.value.length - 1].routePath) return
       slotQueue.value.push({
         routePath: route.path,
-        route: route,
-        slot: ctx.slots.default,
+        route: JSON.parse(JSON.stringify(route)),
+        slot: ctx.slots.default?.(),
       })
     }
 
@@ -82,6 +82,7 @@ export const SplitScreen = defineComponent({
     provide(rowRouterReplaceKey, router.replace)
     
     const renderSlot = computed(() => {
+      // console.log(slotQueue.value)
       const lastSlot = slotQueue.value[slotQueue.value.length - 2];
       
       if(!props.turnOn) {
@@ -100,7 +101,7 @@ export const SplitScreen = defineComponent({
                 route: lastSlot.route,
               },
               {
-                default: () => lastSlot.slot?.(),
+                default: () => lastSlot.slot,
               },
             ),
             h(
