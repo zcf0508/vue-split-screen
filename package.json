@@ -1,7 +1,7 @@
 {
   "name": "vue-split-screen",
   "type": "module",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "packageManager": "pnpm@7.12.0",
   "description": "",
   "author": "zcf0508 <zcf0508@live.com>",
