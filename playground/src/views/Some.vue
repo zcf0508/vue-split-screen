@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import HelloWorld from "@/components/HelloWorld.vue";
+const route = useRoute()
+const id = computed(() => {
+  return route.params.id
+})
 
 const router = useRouter()
 async function go() {
@@ -12,13 +15,18 @@ async function go() {
 </script>
 
 <template>
-  <div class="text-center">
-    <HelloWorld msg="Hello World"></HelloWorld>
+  <div class="h-screen flex flex-col items-center justify-center">
+    <div class="mb-8">
+      This is a test page. The id is {{ id }}.
+    </div>
+
     <button @click="go">
       Go somewhere.
     </button>
   </div>
 </template>
+
+
 
 <style scoped>
 

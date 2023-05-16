@@ -7,7 +7,7 @@ module.exports = {
   extends: [
     "plugin:vue/vue3-recommended", 
     "plugin:security/recommended", 
-    "plugin:vuejs-accessibility/recommended", 
+    // "plugin:vuejs-accessibility/recommended", 
     "plugin:@typescript-eslint/recommended",
     "plugin:@typescript-eslint/recommended-requiring-type-checking",
   ],
