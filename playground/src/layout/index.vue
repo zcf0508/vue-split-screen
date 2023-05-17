@@ -6,16 +6,22 @@
       </div>
       <div>
         <button 
-          class="border-none px-4 py-2 rounded-md bg-light-50 text-blue-600 cursor-pointer"
+          class="border-none px-4 py-2 rounded-md bg-light-50 text-blue-600 cursor-pointer mr-8px"
           @click="retunOn = !retunOn"
         >
           {{ retunOn ? "turn off" : "turn on" }}
+        </button>
+        <button 
+          class="border-none px-4 py-2 rounded-md bg-light-50 text-blue-600 cursor-pointer"
+          @click="splitReverse = !splitReverse"
+        >
+          {{ splitReverse ? "split reverse" : "split default" }}
         </button>
       </div>
     </div>
   </div>
   <router-view v-slot="{ Component }">
-    <SplitScreen :turn-on="retunOn">
+    <SplitScreen :turn-on="retunOn" :split-reverse="splitReverse">
       <component :is="Component" />
       <template #placeholder>
         <!-- placehoder template -->
@@ -55,10 +61,12 @@ import { SplitScreen } from "vue-split-screen"
 export default defineComponent({
   name: "Layout",
   components: {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     SplitScreen,
   },
   setup() {
     const retunOn = ref(false)
+    const splitReverse = ref(false)
 
     const route = useRoute()
 
@@ -70,6 +78,7 @@ export default defineComponent({
     return {
       retunOn,
       title,
+      splitReverse,
     }
   },
 });
