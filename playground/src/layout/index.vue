@@ -15,7 +15,7 @@
           class="border-none px-4 py-2 rounded-md bg-light-50 text-blue-600 cursor-pointer"
           @click="splitReverse = !splitReverse"
         >
-          {{ splitReverse ? "split reverse" : "split default" }}
+          {{ splitReverse ? "split default" : "split reverse" }}
         </button>
       </div>
     </div>
