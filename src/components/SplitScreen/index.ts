@@ -21,6 +21,15 @@ export const SplitScreen = defineComponent({
       type: Boolean,
       default: () => true,
     },
+    /**
+     * By default, the left screen is the main screen and the right screen is the secondary screen.
+     * Enabling this property will make the left screen the secondary screen and the right screen the main one.
+     * This property is not enabled by default.
+     */
+    splitReverse: {
+      type: Boolean,
+      default: () => false,
+    },
   },
   setup:(props, ctx)=>{
     const slotQueue = ref([] as SlotQueueItem[]);
@@ -144,7 +153,9 @@ export const SplitScreen = defineComponent({
 
     return () => h(
       SplitScreenProxy,
-      {},
+      {
+        splitReverse: props.splitReverse,
+      },
       renderSlot.value,
     )
   },
