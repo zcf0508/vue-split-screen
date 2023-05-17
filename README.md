@@ -9,7 +9,7 @@ This library is used to create a split-screen effect of the page, so that the pa
 ```vue
 <template>
   <router-view v-slot="{ Component }">
-    <split-screen>
+    <split-screen :turn-on="turnOn" :split-reverse="reverse">
       <component :is="Component" />
       <template #placeholder>
         <!-- placehoder template -->
@@ -20,6 +20,13 @@ This library is used to create a split-screen effect of the page, so that the pa
 
 <script setup>
 import { SplitScreen } from "vue-split-screen"
+
+const turnOn = ref(true)
+
+/**
+ * @description: Whether to reverse the split screen
+ */
+const reverse = ref(false)
 
 </script>
 ```
