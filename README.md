@@ -31,6 +31,13 @@ const reverse = ref(false)
 </script>
 ```
 
+## Contributors
+
+<a href="https://github.com/zcf0508/vue-split-screen/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=zcf0508/vue-split-screen" />
+</a>
+
+
 ## License
 
 [MIT](./LICENSE) License © 2022 [Huali](https://github.com/zcf0508)
