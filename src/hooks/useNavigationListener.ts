@@ -1,26 +1,25 @@
-import { onMounted, onBeforeUnmount } from "vue";
+import { onMounted, onBeforeUnmount, watch, ComputedRef } from "vue";
 
-interface HistoryState {
-  url: string;
-}
-
-let previousUrl = window.location.href;
+// last history position
+let historyPosition: number | null = null
 
 export function useNavigationListener(onForward?: Function, onBack?: Function) {
   function handleNavigation(event: PopStateEvent) {
-    if (event.state && event.state.url !== previousUrl) {
-      previousUrl = event.state.url;
-      onForward && onForward();
+    if (historyPosition === null || event.state?.position <= historyPosition) {
+      onBack?.()
     } else {
-      onBack && onBack();
+      onForward?.()
     }
+    historyPosition = event.state?.position ?? null
   }
+
 
   onMounted(() => {
     window.addEventListener("popstate", (event) => handleNavigation(event));
-    const currentState = { url: window.location.href };
-    history.replaceState(currentState, "");
-    history.pushState(currentState, "");
+    // const currentState = { url: window.location.href };
+    // history.replaceState(currentState, "");
+    // history.pushState(currentState, "");
+    history.replaceState(null, "", window.location.href);
   });
 
   onBeforeUnmount(() => {
