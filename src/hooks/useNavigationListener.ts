@@ -19,7 +19,7 @@ export function useNavigationListener(onForward?: Function, onBack?: Function) {
     // const currentState = { url: window.location.href };
     // history.replaceState(currentState, "");
     // history.pushState(currentState, "");
-    history.replaceState(null, "", window.location.href);
+    history.replaceState(history.state, "", window.location.href);
   });
 
   onBeforeUnmount(() => {
