@@ -12,6 +12,14 @@ async function go() {
     console.log(e)
   }
 }
+
+async function replace() {
+  try{
+    await router.replace(`/some/${Math.random() * 100}`)
+  }catch(e) {
+    console.log(e)
+  }
+}
 </script>
 
 <template>
@@ -20,9 +28,15 @@ async function go() {
       This is a test page. The id is {{ id }}.
     </div>
 
-    <button @click="go">
-      Go somewhere.
-    </button>
+    <div>
+      <button @click="go" class="mr-8px">
+        Go somewhere.
+      </button>
+  
+      <button @click="replace">
+        replace somewhere.
+      </button>
+    </div>
   </div>
 </template>
 
