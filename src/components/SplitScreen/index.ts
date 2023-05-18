@@ -52,10 +52,6 @@ export const SplitScreen = defineComponent({
     function queuePush(left: boolean) {
       const slots = [] as unknown as SplitSlots
       const current = unref(slotQueue.value[queueIdx.value])
-      console.log({
-        current, 
-        left,
-      })
       if (current && current.splitSlots.length === 2) {
         if(left) {
           slots.push(current.splitSlots[0])
@@ -83,6 +79,10 @@ export const SplitScreen = defineComponent({
     function queueReplace(left: boolean) {
       const slots = [] as unknown as SplitSlots
       const current = slotQueue.value[queueIdx.value]
+      // console.log({
+      //   current, 
+      //   left,
+      // })
       if (current) {
         if(!left) {
           slots.push(unref(current.splitSlots[0]))
@@ -123,13 +123,13 @@ export const SplitScreen = defineComponent({
     })
 
     function routerPush(left: boolean) {
-      console.log({
-        left,
-      })
       leftFlag.value = left
       pushFlag.value = true
     }
     function routerReplace(left: boolean) {
+      // console.log({
+      //   left,
+      // })
       leftFlag.value = left
       pushFlag.value = false
     }
@@ -141,9 +141,13 @@ export const SplitScreen = defineComponent({
 
     watch(() => route.path, () => {
       setTimeout(()=>{
-        // console.log(222, navigationFlag.value)
+        // console.log(222, [
+        //   navigationFlag.value,
+        //   pushFlag.value,
+        //   leftFlag.value,
+        // ])
         if(!navigationFlag.value) {
-          if(pushFlag) {
+          if(pushFlag.value) {
             queuePush(leftFlag.value)
           } else {
             queueReplace(leftFlag.value)
@@ -154,10 +158,10 @@ export const SplitScreen = defineComponent({
     })
 
     watch(() => [slotQueue.value, queueIdx.value], () => {
-      console.log(1111, {
-        slotQueue: slotQueue.value,
-        queueIdx: queueIdx.value,
-      })
+      // console.log(1111, {
+      //   slotQueue: slotQueue.value,
+      //   queueIdx: queueIdx.value,
+      // })
       splitKey.value = new Date().getTime()
     },{
       deep: true,
@@ -167,8 +171,8 @@ export const SplitScreen = defineComponent({
     provide(rowRouterReplaceKey, router.replace)
     
     const renderSlot = computed(() => {
-      console.log(slotQueue.value)
-      console.log(queueIdx.value)
+      // console.log(slotQueue.value)
+      // console.log(queueIdx.value)
       const currentSlot = slotQueue.value[queueIdx.value];
       
       if(!props.turnOn) {
