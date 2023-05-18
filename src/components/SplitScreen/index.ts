@@ -47,6 +47,7 @@ export const SplitScreen = defineComponent({
 
     function pushRoute() {
       if(slotQueue.value.length > 0 && route.path === slotQueue.value[slotQueue.value.length - 1].routePath) return
+      if (slotQueue.value.find(slot => slot.routePath === route.path)) return
       slotQueue.value.push({
         routePath: route.path,
         route: cloneRoute(route),
@@ -59,13 +60,9 @@ export const SplitScreen = defineComponent({
     }
 
     // TODO: something wrong here
-    useNavigationListener(
-      undefined,
-      () => {
-        popRoute()
-        popRoute()
-      },
-    )
+    useNavigationListener(() => {}, () => {
+      popRoute()
+    })
 
     provide(routerCallbackKey, {
       pushRoute,
