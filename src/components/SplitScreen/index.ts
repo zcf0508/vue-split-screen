@@ -1,4 +1,4 @@
-import { h, VNode } from "vue"
+import { h, onMounted, VNode } from "vue"
 import { ref, computed, watch, defineComponent, reactive, nextTick, provide, unref } from "vue";
 import { RouteLocationNormalizedLoaded, RouteRecordRaw, useRoute, useRouter } from "vue-router"
 import { SplitPlaceholder } from "./SplitPlaceholder"
@@ -8,10 +8,16 @@ import { useNavigationListener } from "../../hooks/useNavigationListener";
 import { routerCallbackKey, rowRouterPushKey, rowRouterReplaceKey } from "../constants";
 import { cloneRoute } from "./utils";
 
-type SlotQueueItem = {
-  routePath: string
+type SplitSlot = {
   route: RouteLocationNormalizedLoaded
   slot?: VNode[]
+}
+
+type SplitSlots = [SplitSlot] | [SplitSlot, SplitSlot]
+
+type SlotQueueItem = {
+  routePath: string
+  splitSlots: SplitSlots
 }
 
 export const SplitScreen = defineComponent({
@@ -32,54 +38,126 @@ export const SplitScreen = defineComponent({
     },
   },
   setup:(props, ctx)=>{
-    const slotQueue = ref([] as SlotQueueItem[]);
-
-    const route = useRoute();
-    
-    const router = useRouter()
-
-    slotQueue.value.push({
-      routePath: route.path,
-      route: cloneRoute(route),
-      slot: ctx.slots.default?.(),
-    })
     const splitKey = ref(new Date().getTime())
 
-    function pushRoute() {
-      if(slotQueue.value.length > 0 && route.path === slotQueue.value[slotQueue.value.length - 1].routePath) return
-      if (slotQueue.value.find(slot => slot.routePath === route.path)) return
-      slotQueue.value.push({
-        routePath: route.path,
+    const slotQueue = ref([] as SlotQueueItem[]);
+    const queueIdx = ref(-1)
+
+    const route = useRoute();
+    const router = useRouter()
+
+    const leftFlag = ref(false)
+    const pushFlag = ref(true)
+
+    function queuePush(left: boolean) {
+      const slots = [] as unknown as SplitSlots
+      const current = unref(slotQueue.value[queueIdx.value])
+      console.log({
+        current, 
+        left,
+      })
+      if (current && current.splitSlots.length === 2) {
+        if(left) {
+          slots.push(current.splitSlots[0])
+        } else {
+          slots.push(current.splitSlots[1])
+        }
+      } else if(current) {
+        slots.push(current.splitSlots[0])
+      }
+      slots.push({
         route: cloneRoute(route),
         slot: ctx.slots.default?.(),
       })
+
+      slotQueue.value.splice(queueIdx.value + 1, slotQueue.value.length - queueIdx.value - 1, {
+        routePath: route.path,
+        splitSlots: slots,
+      })
+
+      queueIdx.value  = slotQueue.value.length - 1
+      leftFlag.value = false
+      pushFlag.value = true
     }
 
-    function popRoute() {
-      slotQueue.value.pop()
+    function queueReplace(left: boolean) {
+      const slots = [] as unknown as SplitSlots
+      const current = slotQueue.value[queueIdx.value]
+      if (current) {
+        if(!left) {
+          slots.push(unref(current.splitSlots[0]))
+        }
+      }
+      slots.push({
+        route: cloneRoute(route),
+        slot: ctx.slots.default?.(),
+      })
+
+      slotQueue.value.splice(queueIdx.value, slotQueue.value.length - queueIdx.value, {
+        routePath: route.path,
+        splitSlots: slots,
+      })
+
+      queueIdx.value  = slotQueue.value.length - 1
+      leftFlag.value = false
+      pushFlag.value = true
     }
 
-    // TODO: something wrong here
-    useNavigationListener(() => {}, () => {
-      popRoute()
+    const navigationFlag = ref(false)
+    useNavigationListener(() => {
+      queueIdx.value += 1
+      navigationFlag.value = true
+      if(queueIdx.value >= slotQueue.value.length - 1) {
+        queueIdx.value = slotQueue.value.length - 1
+      }
+    }, () => {
+      queueIdx.value -= 1
+      navigationFlag.value = true
+      if(queueIdx.value < 0) {
+        queueIdx.value = 0
+      }
     })
+
+    onMounted(()=>{
+      queuePush(true)
+    })
+
+    function routerPush(left: boolean) {
+      console.log({
+        left,
+      })
+      leftFlag.value = left
+      pushFlag.value = true
+    }
+    function routerReplace(left: boolean) {
+      leftFlag.value = left
+      pushFlag.value = false
+    }
 
     provide(routerCallbackKey, {
-      pushRoute,
-      popRoute,
+      routerPush,
+      routerReplace,
     })
 
-    watch(
-      () => route.path,
-      (val) => {
-        nextTick(()=>{
-          pushRoute()
-        })
-      },
-    );
+    watch(() => route.path, () => {
+      setTimeout(()=>{
+        // console.log(222, navigationFlag.value)
+        if(!navigationFlag.value) {
+          if(pushFlag) {
+            queuePush(leftFlag.value)
+          } else {
+            queueReplace(leftFlag.value)
+          }
+        }
+        navigationFlag.value = false
+      }, 0)
+    })
 
-    watch(()=>slotQueue.value,()=>{
-      // console.log(1111, unref(slotQueue.value))
+    watch(() => [slotQueue.value, queueIdx.value], () => {
+      console.log(1111, {
+        slotQueue: slotQueue.value,
+        queueIdx: queueIdx.value,
+      })
       splitKey.value = new Date().getTime()
     },{
       deep: true,
@@ -89,8 +167,9 @@ export const SplitScreen = defineComponent({
     provide(rowRouterReplaceKey, router.replace)
     
     const renderSlot = computed(() => {
-      // console.log(slotQueue.value)
-      const lastSlot = slotQueue.value[slotQueue.value.length - 2];
+      console.log(slotQueue.value)
+      console.log(queueIdx.value)
+      const currentSlot = slotQueue.value[queueIdx.value];
       
       if(!props.turnOn) {
         return () => h(
@@ -99,16 +178,16 @@ export const SplitScreen = defineComponent({
           ctx.slots,
         )
       } else {
-        if(lastSlot && lastSlot.slot) {
+        if(currentSlot && currentSlot.splitSlots.length === 2) {
           return () => [
             h(
               ScreenProxy,
               {
                 key: `${splitKey.value}-left`,
-                route: lastSlot.route,
+                route: currentSlot.splitSlots[0].route,
               },
               {
-                default: () => lastSlot.slot,
+                default: () => currentSlot.splitSlots[0].slot,
               },
             ),
             h(

@@ -52,8 +52,8 @@ export const ScreenProxy = defineComponent({
 
     const router = useRouter()
     const routerCallback = inject<{
-      pushRoute: Function,
-      popRoute: Function,
+      routerPush: Function,
+      routerReplace: Function,
     }>(routerCallbackKey)
     
     const rowRouterPush = inject<Function>(rowRouterPushKey)!
@@ -61,47 +61,31 @@ export const ScreenProxy = defineComponent({
 
     const realRoute = useRoute();
 
-    if (props.route) {
-      const pushProxy = new Proxy(rowRouterPush, {
-        apply(target, thisArg, argArray:[to: RouteLocationRaw]) {
-          const r = router.resolve(argArray[0])
-          if(r.path !== realRoute.path){
-            routerCallback?.popRoute()
-          }
-          return target.apply(thisArg, argArray)
-        },
-      })
-      const replaceProxy = new Proxy(rowRouterReplace, {
-        apply(target, thisArg, argArray:[to: RouteLocationRaw]) {
-          const r = router.resolve(argArray[0])
-          if(r.path !== realRoute.path){
-            routerCallback?.popRoute()
-            routerCallback?.popRoute()
-          }
-          return target.apply(thisArg, argArray)
-        },
-      })
+    const pushProxy = new Proxy(rowRouterPush, {
+      apply(target, thisArg, argArray:[to: RouteLocationRaw]) {
+        const r = router.resolve(argArray[0])
+        if(r.path !== realRoute.path){
+          console.log("props.route", props.route)
+          routerCallback?.routerPush(!!props.route)
+        }
+        return target.apply(thisArg, argArray)
+      },
+    })
+    const replaceProxy = new Proxy(rowRouterReplace, {
+      apply(target, thisArg, argArray:[to: RouteLocationRaw]) {
+        const r = router.resolve(argArray[0])
+        if(r.path !== realRoute.path){
+          routerCallback?.routerReplace(!!props.route)
+        }
+        return target.apply(thisArg, argArray)
+      },
+    })
 
-      provide(routerKey, {
-        ...router,
-        push: pushProxy,
-        replace: replaceProxy,
-      })
-    } else {
-      const replaceProxy = new Proxy(rowRouterReplace, {
-        apply(target, thisArg, argArray:[to: RouteLocationRaw]) {
-          const r = router.resolve(argArray[0])
-          if(r.path !== realRoute.path){
-            routerCallback?.popRoute()
-          }
-          return target.apply(thisArg, argArray)
-        },
-      })
-      provide(routerKey, {
-        ...router,
-        replace: replaceProxy,
-      })
-    }
+    provide(routerKey, {
+      ...router,
+      push: pushProxy,
+      replace: replaceProxy,
+    })
 
     return () => h(
       "div",
