@@ -183,7 +183,9 @@ export const SplitScreen = defineComponent({
       if(!props.turnOn) {
         return () => h(
           ScreenProxy,
-          { key: splitKey.value },
+          { 
+            key: splitKey.value,
+          },
           ctx.slots,
         )
       } else {
@@ -216,21 +218,13 @@ export const SplitScreen = defineComponent({
               },
               ctx.slots,
             ),
-            ctx.slots.placeholder
-              ? h(
-                ScreenProxy,
-                {
-                  key: "placeholder",
-                },
-                ctx.slots.placeholder,
-              )
-              : h(
-                ScreenProxy,
-                {
-                  key: "placeholder",
-                },
-                h(SplitPlaceholder),
-              ),
+            h(
+              ScreenProxy,
+              {
+                key: "placeholder",
+              },
+              ctx.slots.placeholder? ctx.slots.placeholder : h(SplitPlaceholder),
+            ),
           ]
         }
       }
