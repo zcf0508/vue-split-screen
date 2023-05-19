@@ -15,6 +15,9 @@
     "paths": {
       "@/*": [
         "./src/*"
+      ],
+      "vue-split-screen": [
+        "../src"
       ]
     },
     "types": [
