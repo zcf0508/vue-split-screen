@@ -85,7 +85,7 @@ export const SplitScreen = defineComponent({
       // })
       if (current) {
         if(!left) {
-          slots.push(unref(current.splitSlots[0]))
+          slots.push(current.splitSlots[0])
         }
       }
       slots.push({

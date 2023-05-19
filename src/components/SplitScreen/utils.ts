@@ -1,5 +1,5 @@
 import { cloneDeep } from "lodash-es";
-import { RouteLocationNormalizedLoaded, RouteLocationMatched } from "vue-router"
+import { RouteLocationNormalizedLoaded, RouteLocationMatched, RouteLocation } from "vue-router"
 
 export function cloneRoute(route: RouteLocationNormalizedLoaded):RouteLocationNormalizedLoaded {
   return {
@@ -11,7 +11,7 @@ export function cloneRoute(route: RouteLocationNormalizedLoaded):RouteLocationNo
     params: cloneDeep(route.params),
     path: cloneDeep(route.path),
     query: cloneDeep(route.query),
-    redirectedFrom: cloneDeep(route.redirectedFrom),
+    redirectedFrom: cloneRedirectedFrom(route.redirectedFrom),
   } as RouteLocationNormalizedLoaded
 }
 
@@ -32,3 +32,20 @@ function cloneMatched(matched: RouteLocationMatched[]) {
   ]
 }
 
+
+function cloneRedirectedFrom(redirectedFrom?: RouteLocation) {
+  if(!redirectedFrom) {
+    return undefined
+  }
+  return {
+    fullPath: cloneDeep(redirectedFrom.fullPath),
+    hash: cloneDeep(redirectedFrom.hash),
+    matched: cloneMatched(redirectedFrom.matched),
+    meta: cloneDeep(redirectedFrom.meta),
+    name: cloneDeep(redirectedFrom.name),
+    params: cloneDeep(redirectedFrom.params),
+    path: cloneDeep(redirectedFrom.path),
+    query: cloneDeep(redirectedFrom.query),
+    redirectedFrom: cloneRedirectedFrom(redirectedFrom.redirectedFrom),
+  }
+}
