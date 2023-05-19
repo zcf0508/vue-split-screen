@@ -5,7 +5,7 @@ import { SplitPlaceholder } from "./SplitPlaceholder"
 import { SplitScreenProxy } from "./SplitScreenProxy"
 import { ScreenProxy } from "./ScreenProxy"
 import { useNavigationListener } from "../../hooks/useNavigationListener";
-import { routerCallbackKey, rowRouterPushKey, rowRouterReplaceKey } from "../constants";
+import { getRealRouteKey, routerCallbackKey, rowRouterPushKey, rowRouterReplaceKey } from "../constants";
 import { cloneRoute } from "./utils";
 
 type SplitSlot = {
@@ -157,6 +157,11 @@ export const SplitScreen = defineComponent({
       }, 0)
     })
 
+    provide(getRealRouteKey, () => {
+      // console.log("getRealRoute")
+      return cloneRoute(route)
+    })
+    
     watch(() => [slotQueue.value, queueIdx.value], () => {
       // console.log(1111, {
       //   slotQueue: slotQueue.value,
