@@ -16,7 +16,7 @@ export function cloneRoute(route: RouteLocationNormalizedLoaded):RouteLocationNo
 }
 
 
-function cloneMatched(matched: RouteLocationMatched[]) {
+function cloneMatched(matched: RouteLocationMatched[]): RouteLocationMatched[] {
   return [
     ...matched.map((item) => {
       return {
@@ -29,11 +29,11 @@ function cloneMatched(matched: RouteLocationMatched[]) {
         props: cloneDeep(item.props),
       }
     }),
-  ]
+  ] as RouteLocationMatched[]
 }
 
 
-function cloneRedirectedFrom(redirectedFrom?: RouteLocation) {
+function cloneRedirectedFrom(redirectedFrom?: RouteLocation): RouteLocation | undefined {
   if(!redirectedFrom) {
     return undefined
   }
