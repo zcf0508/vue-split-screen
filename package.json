@@ -40,7 +40,7 @@
     "dev": "unbuild --stub",
     "format": "eslint . --fix",
     "lint": "eslint .",
-    "prepublishOnly": "npm lint && npm build",
+    "prepublishOnly": "npm run build",
     "release": "bumpp",
     "start": "esno src/index.ts",
     "test": "vitest",
