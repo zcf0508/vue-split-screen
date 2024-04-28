@@ -31,6 +31,10 @@ export const ScreenProxy = defineComponent({
       type: Object as PropType<RouteLocationNormalizedLoaded | null>,
       default: () => null,
     },
+    left: {
+      type: Boolean,
+      default: false,
+    },
   },
   setup(props, ctx){
     const getRealRoute = inject<() => RouteLocationNormalizedLoaded>(getRealRouteKey)!
@@ -69,7 +73,7 @@ export const ScreenProxy = defineComponent({
         const realRoute = getRealRoute()
         const r = router.resolve(argArray[0])
         if(r.path !== realRoute.path){
-          routerCallback?.routerPush(!!props.route)
+          routerCallback?.routerPush(props.left)
         }
         return target.apply(thisArg, argArray)
       },
@@ -79,7 +83,7 @@ export const ScreenProxy = defineComponent({
         const realRoute = getRealRoute()
         const r = router.resolve(argArray[0])
         if(r.path !== realRoute.path){
-          routerCallback?.routerReplace(!!props.route)
+          routerCallback?.routerReplace(props.left)
         }
         return target.apply(thisArg, argArray)
       },

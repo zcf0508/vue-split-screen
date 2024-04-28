@@ -1,7 +1,7 @@
 import { onMounted, onBeforeUnmount, watch, ComputedRef } from "vue";
 
 // last history position
-let historyPosition: number | null = null
+let historyPosition: number = window.history.length;
 
 export function useNavigationListener(onForward?: Function, onBack?: Function) {
   function handleNavigation(event: PopStateEvent) {

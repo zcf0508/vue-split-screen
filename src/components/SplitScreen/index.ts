@@ -158,7 +158,9 @@ export const SplitScreen = defineComponent({
     })
 
     watch(() => [slotQueue.value, queueIdx.value], (val) => {
-      // console.log(val)
+      console.log(val)
+    }, {
+      deep: true,
     })
 
     provide(rowRouterPushKey, router.push)
@@ -169,11 +171,12 @@ export const SplitScreen = defineComponent({
       
       if(!props.turnOn) {
         return () => [
-          ...allSlots.value.map((slot) => h(
+          ...allSlots.value.map((slot, index) => h(
             ScreenProxy,
             {
               key: slot.key,
               route: slot.route,
+              left: allSlots.value.length > 1 && index === 0,
               style: slot.key === currentSlot.splitSlots[currentSlot.splitSlots.length - 1]?.key ? "" :"display: none;",
             },
             () => slot.slot,
@@ -182,11 +185,12 @@ export const SplitScreen = defineComponent({
       } else {
         if(currentSlot && currentSlot.splitSlots.length === 2) {
           return () => [
-            ...allSlots.value.map((slot) => h(
+            ...allSlots.value.map((slot, index) => h(
               ScreenProxy,
               {
                 key: slot.key,
                 route: slot.route,
+                left: allSlots.value.length > 1 && index === 0,
                 style: currentSlot.splitSlots.map(s => s.key).includes(slot.key) ? "" :"display: none;",
               },
               () => slot.slot,
@@ -199,6 +203,7 @@ export const SplitScreen = defineComponent({
               {
                 key: slot.key,
                 route: slot.route,
+                left: allSlots.value.length > 1 && index === 0,
                 style: 
                 (slot.key === currentSlot?.splitSlots[0].key) 
                 || (!currentSlot && index === allSlots.value.length - 1)
