@@ -1,3 +1,33 @@
+<script lang="ts">
+export default defineComponent({
+  name: 'HelloWorld',
+  props: {
+    msg: {
+      type: String,
+      required: true,
+    },
+  },
+  setup: () => {
+    const data = reactive({
+      number: 0,
+    });
+    const count = computed(() => counterStore.count);
+
+    function plus() {
+      counterStore.increment();
+    }
+
+    function add() {
+      counterStore.add(Number(data.number));
+    }
+
+    const route = useRoute();
+
+    return { ...toRefs(data), count, plus, add, path: route.path };
+  },
+});
+</script>
+
 <template>
   <h1>{{ msg }}</h1>
 
@@ -51,37 +81,6 @@
     <code>components/HelloWorld.vue</code> to test hot module replacement.
   </p>
 </template>
-
-<script lang="ts">
-export default defineComponent({
-  name: "HelloWorld",
-  props: {
-    msg: {
-      type: String,
-      required: true,
-    },
-  },
-  setup: () => {
-    const data = reactive({
-      number: 0,
-    });
-    const count = computed(() => counterStore.count);
-
-    function plus() {
-      counterStore.increment();
-    }
-
-    function add() {
-      counterStore.add(Number(data.number));
-    }
-
-    const route = useRoute();
-
-
-    return { ...toRefs(data), count, plus, add, path: route.path };
-  },
-});
-</script>
 
 <style scoped>
 a {

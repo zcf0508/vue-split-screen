@@ -1,20 +1,22 @@
-import { h, defineComponent } from "vue";
+import { defineComponent, h } from 'vue';
 
 export const SplitScreenProxy = defineComponent({
-  name: "SplitScreenProxy",
+  name: 'SplitScreenProxy',
   props: {
     splitReverse: {
       type: Boolean,
       default: () => false,
     },
   },
-  setup(props, ctx){
+  setup(props, ctx) {
     return () => h(
-      "div",
+      'div',
       {
-        style: `display: flex; flex-direction: ${props.splitReverse ? "row-reverse" : "row"};`,
+        style: `display: flex; flex-direction: ${props.splitReverse
+          ? 'row-reverse'
+          : 'row'};`,
       },
       ctx.slots,
-    )
+    );
   },
-})
+});

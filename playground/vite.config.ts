@@ -1,13 +1,13 @@
-import * as path from "path";
-import { defineConfig } from "vite";
-import vue from "@vitejs/plugin-vue";
+import * as path from 'node:path';
+import { defineConfig } from 'vite';
+import vue from '@vitejs/plugin-vue';
 // import legacy from "@vitejs/plugin-legacy";
-import viteCompression from "vite-plugin-compression"; //gzip
-import { visualizer } from "rollup-plugin-visualizer";
-import AutoImport from "unplugin-auto-import/vite";
-import Components from "unplugin-vue-components/vite";
-import UnoCSS from "unocss/vite";
-import Inspect from "vite-plugin-inspect"
+import viteCompression from 'vite-plugin-compression'; // gzip
+import { visualizer } from 'rollup-plugin-visualizer';
+import AutoImport from 'unplugin-auto-import/vite';
+import Components from 'unplugin-vue-components/vite';
+import UnoCSS from 'unocss/vite';
+import Inspect from 'vite-plugin-inspect';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command, mode }) => {
@@ -25,35 +25,36 @@ export default defineConfig(({ command, mode }) => {
         /\.vue$/,
         /\.vue\?vue/, // .vue
       ],
-      imports: ["vue", "vue-router", "@vueuse/core"],
-      dirs: ["src/hooks", "src/store", "src/utils", "src/api"],
-      dts: "src/auto-import.d.ts",
+      imports: ['vue', 'vue-router', '@vueuse/core'],
+      dirs: ['src/hooks', 'src/store', 'src/utils', 'src/api'],
+      dts: 'src/auto-import.d.ts',
     }),
     Components({
       /* options */
-      dirs: ["src/components"],
-      extensions: ["vue"],
+      dirs: ['src/components'],
+      extensions: ['vue'],
       deep: true,
-      dts: "src/components.d.ts",
+      dts: 'src/components.d.ts',
       resolvers: [],
     }),
     UnoCSS(),
   ];
 
-  if (command === "serve") {
+  if (command === 'serve') {
     // 开发环境下
     plugins = [
       ...plugins,
       visualizer(),
       Inspect(),
-    ]
-  } else {
+    ];
+  }
+  else {
     plugins = [
       ...plugins,
       viteCompression({
-        threshold: 102400, //超过10k进行压缩
+        threshold: 102400, // 超过10k进行压缩
       }),
-    ]
+    ];
   }
 
   return {
@@ -62,10 +63,10 @@ export default defineConfig(({ command, mode }) => {
     },
     plugins,
     build: {
-      minify: "terser",
+      minify: 'terser',
       terserOptions: {
         compress: {
-          //生产环境时移除console
+          // 生产环境时移除console
           drop_console: true,
           drop_debugger: true,
         },
@@ -73,14 +74,14 @@ export default defineConfig(({ command, mode }) => {
     },
     resolve: {
       alias: {
-        "@": path.resolve(__dirname, "./src"),
-        "vue-split-screen": path.resolve(__dirname, "../src"),
+        '@': path.resolve(__dirname, './src'),
+        'vue-split-screen': path.resolve(__dirname, '../src'),
       },
     },
     test: {
-      include: ["tests/unit/*.spec.ts"],
+      include: ['tests/unit/*.spec.ts'],
       globals: true,
-      environment: "happy-dom",
+      environment: 'happy-dom',
     },
   };
 });

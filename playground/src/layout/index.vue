@@ -1,3 +1,30 @@
+<script lang="ts">
+import { SplitScreen } from 'vue-split-screen';
+
+export default defineComponent({
+  name: 'Layout',
+  components: {
+    SplitScreen,
+  },
+  setup() {
+    const retunOn = ref(false);
+    const splitReverse = ref(false);
+
+    const route = useRoute();
+
+    const title = computed(() => {
+      return route.meta.title || 'SplitScreen';
+    });
+
+    return {
+      retunOn,
+      title,
+      splitReverse,
+    };
+  },
+});
+</script>
+
 <template>
   <div class="w-full bg-blue-600 flex justify-center">
     <div class="container flex h-[60px] flex items-center justify-between px-[20px]">
@@ -5,13 +32,13 @@
         {{ title }}
       </div>
       <div>
-        <button 
+        <button
           class="border-none px-4 py-2 rounded-md bg-light-50 text-blue-600 cursor-pointer mr-8px"
           @click="retunOn = !retunOn"
         >
           {{ retunOn ? "turn off" : "turn on" }}
         </button>
-        <button 
+        <button
           class="border-none px-4 py-2 rounded-md bg-light-50 text-blue-600 cursor-pointer"
           @click="splitReverse = !splitReverse"
         >
@@ -33,56 +60,28 @@
     </SplitScreen>
   </router-view>
   <div class="fixed bottom-0 w-full h-[60px] bg-white flex items-center">
-    <div 
-      class="flex-1 flex flex-col justify-center items-center" 
+    <div
+      class="flex-1 flex flex-col justify-center items-center"
       @click="$router.push('/home')"
     >
-      <i 
+      <i
         class="i-material-symbols:home-outline-rounded text-2xl text-gray-600"
-        :class="{'text-blue-600!':$route.path === '/home'}"
+        :class="{ 'text-blue-600!': $route.path === '/home' }"
       ></i>
-      <span class="text-[10px]" :class="{'text-blue-600':$route.path === '/home'}">Home</span>
+      <span class="text-[10px]" :class="{ 'text-blue-600': $route.path === '/home' }">Home</span>
     </div>
-    <div 
+    <div
       class="flex-1 flex flex-col justify-center items-center"
       @click="$router.push('/me')"
     >
-      <i 
+      <i
         class="i-material-symbols:person-2-outline-rounded text-2xl text-gray-600"
-        :class="{'text-blue-600!':$route.path === '/me'}"
+        :class="{ 'text-blue-600!': $route.path === '/me' }"
       ></i>
-      <span class="text-[10px]" :class="{'text-blue-600':$route.path === '/me'}">Me</span>
+      <span class="text-[10px]" :class="{ 'text-blue-600': $route.path === '/me' }">Me</span>
     </div>
   </div>
 </template>
-
-<script lang="ts">
-import { SplitScreen } from "vue-split-screen"
-export default defineComponent({
-  name: "Layout",
-  components: {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    SplitScreen,
-  },
-  setup() {
-    const retunOn = ref(false)
-    const splitReverse = ref(false)
-
-    const route = useRoute()
-
-    const title = computed(()=>{
-      return route.meta.title || "SplitScreen"
-    })
-
-
-    return {
-      retunOn,
-      title,
-      splitReverse,
-    }
-  },
-});
-</script>
 
 <style>
 </style>

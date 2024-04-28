@@ -1,20 +1,22 @@
 <script setup lang="ts">
-import HelloWorld from "@/components/HelloWorld.vue";
+import HelloWorld from '@/components/HelloWorld.vue';
 
-const router = useRouter()
+const router = useRouter();
 async function go() {
-  try{
-    await router.push(`/some/${Math.random() * 100}`)
-  }catch(e) {
-    console.log(e)
+  try {
+    await router.push(`/some/${Math.random() * 100}`);
+  }
+  catch (e) {
+    console.log(e);
   }
 }
 
 async function replace() {
-  try{
-    await router.replace(`/some/${Math.random() * 100}`)
-  }catch(e) {
-    console.log(e)
+  try {
+    await router.replace(`/some/${Math.random() * 100}`);
+  }
+  catch (e) {
+    console.log(e);
   }
 }
 </script>
@@ -22,7 +24,7 @@ async function replace() {
 <template>
   <div class="text-center">
     <HelloWorld msg="Hello World"></HelloWorld>
-    <button @click="go" class="mr-8px">
+    <button class="mr-8px" @click="go">
       Go somewhere.
     </button>
     <button @click="replace">

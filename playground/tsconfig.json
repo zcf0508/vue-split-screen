@@ -1,17 +1,13 @@
 {
   "compilerOptions": {
     "target": "esnext",
-    "module": "esnext",
-    "moduleResolution": "node",
-    "strict": true,
     "jsx": "preserve",
-    "sourceMap": true,
-    "resolveJsonModule": true,
-    "esModuleInterop": true,
     "lib": [
       "esnext",
       "dom"
     ],
+    "module": "esnext",
+    "moduleResolution": "node",
     "paths": {
       "@/*": [
         "./src/*"
@@ -20,9 +16,13 @@
         "../src"
       ]
     },
+    "resolveJsonModule": true,
     "types": [
       "vitest/globals"
-    ]
+    ],
+    "strict": true,
+    "sourceMap": true,
+    "esModuleInterop": true
   },
   "include": [
     "src/**/*.ts",
@@ -31,7 +31,7 @@
     "src/**/*.vue",
     "tests/**/*.ts",
     "tests/**/*.tsx",
-    ".eslintrc.js",
+    ".eslintrc.js"
   ],
   "exclude": [
     "node_modules"
