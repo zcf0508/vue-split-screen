@@ -41,7 +41,7 @@
     "format": "eslint . --fix",
     "lint": "eslint .",
     "prepublishOnly": "npm lint && npm build",
-    "release": "bumpp && npm publish",
+    "release": "bumpp",
     "start": "esno src/index.ts",
     "test": "vitest",
     "typecheck": "tsc --noEmit",
