@@ -62,12 +62,12 @@ export const ScreenProxy = defineComponent({
 
     const router = useRouter();
     const routerCallback = inject<{
-      routerPush: Function
-      routerReplace: Function
+      routerPush: (left: boolean) => void
+      routerReplace: (left: boolean) => void
     }>(routerCallbackKey);
 
-    const rowRouterPush = inject<Function>(rowRouterPushKey)!;
-    const rowRouterReplace = inject<Function>(rowRouterReplaceKey)!;
+    const rowRouterPush = inject<typeof router.push>(rowRouterPushKey)!;
+    const rowRouterReplace = inject<typeof router.replace>(rowRouterReplaceKey)!;
 
     const pushProxy = new Proxy(rowRouterPush, {
       apply(target, thisArg, argArray: [to: RouteLocationRaw]) {

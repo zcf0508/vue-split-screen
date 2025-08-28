@@ -8,6 +8,7 @@ import { SplitPlaceholder } from './SplitPlaceholder';
 import { SplitScreenProxy } from './SplitScreenProxy';
 import { ScreenProxy } from './ScreenProxy';
 import { cloneRoute } from './utils';
+import { createTimeline } from './timeline';
 
 interface SplitSlot {
   key: string
@@ -40,89 +41,43 @@ export const SplitScreen = defineComponent({
     },
   },
   setup: (props, ctx) => {
-    const allSlots = ref<SplitSlot[]>([]);
-
-    const slotQueue = ref([] as SlotQueueItem[]);
-    const queueIdx = ref(-1);
+    const timeline = createTimeline();
 
     const route = useRoute();
     const router = useRouter();
 
     const leftFlag = ref(false);
     const pushFlag = ref(true);
+    const timelineTick = ref(0);
 
     function queuePush(left: boolean) {
-      const slots = [] as unknown as SplitSlots;
-      const current = unref(slotQueue.value[queueIdx.value]);
-      if (current && current.splitSlots.length === 2) {
-        if (left) {
-          slots.push(current.splitSlots[0]);
-        }
-        else {
-          slots.push(current.splitSlots[1]);
-        }
-      }
-      else if (current) {
-        slots.push(current.splitSlots[0]);
-      }
-
-      allSlots.value.push({
-        key: new Date().getTime().toString(),
-        route: cloneRoute(route),
-        slot: ctx.slots.default?.(),
-      });
-
-      slots.push(allSlots.value[allSlots.value.length - 1]);
-
-      slotQueue.value.splice(queueIdx.value + 1, slotQueue.value.length - queueIdx.value - 1, {
-        routePath: route.path,
-        splitSlots: slots,
-      });
-
-      queueIdx.value = slotQueue.value.length - 1;
+      const s = timeline.createSlot(cloneRoute(route), ctx.slots.default?.());
+      timeline.push(left, s);
       leftFlag.value = false;
       pushFlag.value = true;
+      // perform GC to remove unused slots
+      timeline.gc();
+      timelineTick.value++;
     }
 
     function queueReplace(left: boolean) {
-      const slots = [] as unknown as SplitSlots;
-      const current = slotQueue.value[queueIdx.value];
-      if (current) {
-        if (!left) {
-          slots.push(current.splitSlots[0]);
-        }
-      }
-      allSlots.value.push({
-        key: new Date().getTime().toString(),
-        route: cloneRoute(route),
-        slot: ctx.slots.default?.(),
-      });
-
-      slots.push(allSlots.value[allSlots.value.length - 1]);
-
-      slotQueue.value.splice(queueIdx.value, slotQueue.value.length - queueIdx.value, {
-        routePath: route.path,
-        splitSlots: slots,
-      });
-
-      queueIdx.value = slotQueue.value.length - 1;
+      const s = timeline.createSlot(cloneRoute(route), ctx.slots.default?.());
+      timeline.replace(left, s);
       leftFlag.value = false;
       pushFlag.value = true;
+      timeline.gc();
+      timelineTick.value++;
     }
 
     const navigationFlag = ref(false);
     useNavigationListener(() => {
-      queueIdx.value += 1;
+      timeline.forward();
       navigationFlag.value = true;
-      if (queueIdx.value >= slotQueue.value.length - 1) {
-        queueIdx.value = slotQueue.value.length - 1;
-      }
+      timelineTick.value++;
     }, () => {
-      queueIdx.value -= 1;
+      timeline.back();
       navigationFlag.value = true;
-      if (queueIdx.value < 0) {
-        queueIdx.value = 0;
-      }
+      timelineTick.value++;
     });
 
     onMounted(() => {
@@ -161,27 +116,28 @@ export const SplitScreen = defineComponent({
       return cloneRoute(route);
     });
 
-    watch(() => [slotQueue.value, queueIdx.value], (val) => {
-      console.log(val);
-    }, {
-      deep: true,
-    });
+    // timeline is an internal non-reactive structure; use a tick ref to trigger reactivity
 
     provide(rowRouterPushKey, router.push);
     provide(rowRouterReplaceKey, router.replace);
 
     const renderSlot = computed(() => {
-      const currentSlot = slotQueue.value[queueIdx.value];
+      // depend on tick so computed re-evaluates when timeline changes
+      void timelineTick.value;
+      const current = timeline.getCurrentEntry();
+      const all = timeline.getSlotsArray();
+
+      // no-op debug removed
 
       if (!props.turnOn) {
         return () => [
-          ...allSlots.value.map((slot, index) => h(
+          ...all.map((slot, index) => h(
             ScreenProxy,
             {
               key: slot.key,
               route: slot.route,
-              left: allSlots.value.length > 1 && index === 0,
-              style: slot.key === currentSlot.splitSlots[currentSlot.splitSlots.length - 1]?.key
+              left: all.length > 1 && index === 0,
+              style: slot.key === (current?.rightId || current?.leftId)
                 ? ''
                 : 'display: none;',
             },
@@ -190,15 +146,15 @@ export const SplitScreen = defineComponent({
         ];
       }
       else {
-        if (currentSlot && currentSlot.splitSlots.length === 2) {
+        if (current && current.leftId && current.rightId) {
           return () => [
-            ...allSlots.value.map((slot, index) => h(
+            ...all.map((slot, index) => h(
               ScreenProxy,
               {
                 key: slot.key,
                 route: slot.route,
-                left: allSlots.value.length > 1 && index === 0,
-                style: currentSlot.splitSlots.map(s => s.key).includes(slot.key)
+                left: all.length > 1 && index === 0,
+                style: [current.leftId, current.rightId].includes(slot.id)
                   ? ''
                   : 'display: none;',
               },
@@ -208,15 +164,15 @@ export const SplitScreen = defineComponent({
         }
         else {
           return () => [
-            ...allSlots.value.map((slot, index) => h(
+            ...all.map((slot, index) => h(
               ScreenProxy,
               {
                 key: slot.key,
                 route: slot.route,
-                left: allSlots.value.length > 1 && index === 0,
+                left: all.length > 1 && index === 0,
                 style:
-                (slot.key === currentSlot?.splitSlots[0].key)
-                || (!currentSlot && index === allSlots.value.length - 1)
+                (slot.id === current?.leftId)
+                || (!current && index === all.length - 1)
                   ? ''
                   : 'display: none;',
               },
