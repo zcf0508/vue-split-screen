@@ -130,54 +130,54 @@ export const SplitScreen = defineComponent({
       // no-op debug removed
 
       if (!props.turnOn) {
-        return () => [
-          ...all.map((slot, index) => h(
+        const activeSlot = all.find(slot => slot.id === (current?.rightId || current?.leftId));
+        return () => activeSlot ? [
+          h(
             ScreenProxy,
             {
-              key: slot.key,
-              route: slot.route,
-              left: all.length > 1 && index === 0,
-              style: slot.key === (current?.rightId || current?.leftId)
-                ? ''
-                : 'display: none;',
+              key: activeSlot.key,
+              route: activeSlot.route,
+              left: false,
+              style: '',
             },
-            () => slot.slot,
-          )),
-        ];
+            () => activeSlot.slot,
+          ),
+        ] : [];
       }
       else {
         if (current && current.leftId && current.rightId) {
+          const leftSlot = all.find(slot => slot.id === current.leftId);
+          const rightSlot = all.find(slot => slot.id === current.rightId);
+          const visibleSlots = [leftSlot, rightSlot].filter(Boolean);
+          
           return () => [
-            ...all.map((slot, index) => h(
+            ...visibleSlots.map((slot) => h(
               ScreenProxy,
               {
-                key: slot.key,
-                route: slot.route,
-                left: all.length > 1 && index === 0,
-                style: [current.leftId, current.rightId].includes(slot.id)
-                  ? ''
-                  : 'display: none;',
+                key: slot!.key,
+                route: slot!.route,
+                left: slot!.id === current.leftId,
+                style: '',
               },
-              () => slot.slot,
+              () => slot!.slot,
             )),
           ];
         }
         else {
+          const leftSlot = current?.leftId ? all.find(slot => slot.id === current.leftId) : null;
+          const activeSlot = leftSlot || (all.length > 0 ? all[all.length - 1] : null);
+          
           return () => [
-            ...all.map((slot, index) => h(
+            ...(activeSlot ? [h(
               ScreenProxy,
               {
-                key: slot.key,
-                route: slot.route,
-                left: all.length > 1 && index === 0,
-                style:
-                (slot.id === current?.leftId)
-                || (!current && index === all.length - 1)
-                  ? ''
-                  : 'display: none;',
+                key: activeSlot.key,
+                route: activeSlot.route,
+                left: true,
+                style: '',
               },
-              () => slot.slot,
-            )),
+              () => activeSlot.slot,
+            )] : []),
             h(
               ScreenProxy,
               {

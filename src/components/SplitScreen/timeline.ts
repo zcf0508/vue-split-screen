@@ -91,8 +91,15 @@ export function createTimeline() {
     let leftId = prev?.leftId;
     let rightId = prev?.rightId;
 
-    if (left) { leftId = slot.id; }
-    else { rightId = slot.id; }
+    if (left) { 
+      leftId = slot.id;
+      // When replacing left, clear the right side to show placeholder
+      rightId = undefined;
+    }
+    else { 
+      rightId = slot.id;
+      // When replacing right, keep the left side unchanged
+    }
 
     const entry: HistoryEntry = {
       id: genId(),
