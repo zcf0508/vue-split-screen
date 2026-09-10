@@ -10,7 +10,7 @@ async function go() {
     await router.push(`/some/${Math.random() * 100}`);
   }
   catch (e) {
-    console.log(e);
+    console.error(e);
   }
 }
 
@@ -19,7 +19,7 @@ async function replace() {
     await router.replace(`/some/${Math.random() * 100}`);
   }
   catch (e) {
-    console.log(e);
+    console.error(e);
   }
 }
 </script>

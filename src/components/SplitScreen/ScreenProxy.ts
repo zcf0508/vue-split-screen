@@ -1,30 +1,17 @@
-import { computed, defineComponent, h, inject, onMounted, onUnmounted, provide, reactive } from 'vue';
-import type { ComputedRef, PropType, Ref } from 'vue';
+import type { PropType, Ref } from 'vue';
 import type {
   RouteLocationNormalizedLoaded,
   RouteLocationRaw,
+  Router,
 } from 'vue-router';
+import { computed, defineComponent, h, inject, provide, reactive } from 'vue';
 import {
-  RouteRecordRaw,
   routeLocationKey,
   routerKey,
   routerViewLocationKey,
-  useRoute,
   useRouter,
 } from 'vue-router';
 import { getRealRouteKey, routerCallbackKey, rowRouterPushKey, rowRouterReplaceKey } from '../constants';
-
-const START_LOCATION_NORMALIZED: RouteLocationNormalizedLoaded = {
-  path: '/',
-  name: undefined,
-  params: {},
-  query: {},
-  hash: '',
-  fullPath: '/',
-  matched: [],
-  meta: {},
-  redirectedFrom: undefined,
-};
 
 export const ScreenProxy = defineComponent({
   name: 'ScreenProxy',
@@ -46,28 +33,28 @@ export const ScreenProxy = defineComponent({
       () => props.route || injectedRoute.value,
     );
 
-    const reactiveRouteRef = computed(() => {
-      const reactiveRoute = {} as {
-        [k in keyof RouteLocationNormalizedLoaded]: ComputedRef<
-          RouteLocationNormalizedLoaded[k]
-        >
-      };
-      for (const key in START_LOCATION_NORMALIZED) {
-        reactiveRoute[key] = computed(() => routeToDisplay.value[key]);
-      }
-      return reactiveRoute;
-    });
+    const reactiveRoute = {
+      fullPath: computed(() => routeToDisplay.value.fullPath),
+      hash: computed(() => routeToDisplay.value.hash),
+      matched: computed(() => routeToDisplay.value.matched),
+      meta: computed(() => routeToDisplay.value.meta),
+      name: computed(() => routeToDisplay.value.name),
+      params: computed(() => routeToDisplay.value.params),
+      path: computed(() => routeToDisplay.value.path),
+      query: computed(() => routeToDisplay.value.query),
+      redirectedFrom: computed(() => routeToDisplay.value.redirectedFrom),
+    };
 
-    provide(routeLocationKey, reactive(reactiveRouteRef.value));
+    provide(routeLocationKey, reactive(reactiveRoute));
 
     const router = useRouter();
     const routerCallback = inject<{
-      routerPush: Function
-      routerReplace: Function
+      routerPush: (left: boolean) => void;
+      routerReplace: (left: boolean) => void;
     }>(routerCallbackKey);
 
-    const rowRouterPush = inject<Function>(rowRouterPushKey)!;
-    const rowRouterReplace = inject<Function>(rowRouterReplaceKey)!;
+    const rowRouterPush = inject<Router['push']>(rowRouterPushKey)!;
+    const rowRouterReplace = inject<Router['replace']>(rowRouterReplaceKey)!;
 
     const pushProxy = new Proxy(rowRouterPush, {
       apply(target, thisArg, argArray: [to: RouteLocationRaw]) {

@@ -1,21 +1,27 @@
-import { ComputedRef, onBeforeUnmount, onMounted, watch } from 'vue';
+import { onBeforeUnmount, onMounted } from 'vue';
 
-// last history position
-let historyPosition: number = window.history.length;
+export function useNavigationListener(onForward?: () => void, onBack?: () => void) {
+  let historyPosition: number | null = null;
 
-export function useNavigationListener(onForward?: Function, onBack?: Function) {
   function handleNavigation(event: PopStateEvent) {
-    if (historyPosition === null || event.state?.position <= historyPosition) {
+    const nextPosition = typeof event.state?.position === 'number'
+      ? event.state.position
+      : null;
+
+    if (historyPosition === null || nextPosition === null || nextPosition <= historyPosition) {
       onBack?.();
     }
     else {
       onForward?.();
     }
-    historyPosition = event.state?.position ?? null;
+    historyPosition = nextPosition;
   }
 
   onMounted(() => {
-    window.addEventListener('popstate', event => handleNavigation(event));
+    historyPosition = typeof window.history.state?.position === 'number'
+      ? window.history.state.position
+      : null;
+    window.addEventListener('popstate', handleNavigation);
     // const currentState = { url: window.location.href };
     // history.replaceState(currentState, "");
     // history.pushState(currentState, "");
@@ -23,6 +29,6 @@ export function useNavigationListener(onForward?: Function, onBack?: Function) {
   });
 
   onBeforeUnmount(() => {
-    window.removeEventListener('popstate', event => handleNavigation(event));
+    window.removeEventListener('popstate', handleNavigation);
   });
 }

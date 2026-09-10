@@ -1,13 +1,7 @@
 {
+  "extends": "../tsconfig.json",
   "compilerOptions": {
-    "target": "esnext",
     "jsx": "preserve",
-    "lib": [
-      "esnext",
-      "dom"
-    ],
-    "module": "esnext",
-    "moduleResolution": "node",
     "paths": {
       "@/*": [
         "./src/*"
@@ -16,24 +10,22 @@
         "../src"
       ]
     },
-    "resolveJsonModule": true,
     "types": [
-      "vitest/globals"
+      "vite/client"
     ],
-    "strict": true,
-    "sourceMap": true,
-    "esModuleInterop": true
+    "noUncheckedIndexedAccess": false,
+    "skipLibCheck": true
   },
   "include": [
     "src/**/*.ts",
     "src/**/*.d.ts",
     "src/**/*.tsx",
     "src/**/*.vue",
-    "tests/**/*.ts",
-    "tests/**/*.tsx",
-    ".eslintrc.js"
+    "vite.config.ts",
+    "unocss.config.ts"
   ],
   "exclude": [
+    "dist",
     "node_modules"
   ]
 }

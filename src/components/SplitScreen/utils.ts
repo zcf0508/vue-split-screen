@@ -1,5 +1,5 @@
-import { cloneDeep } from 'lodash-es';
 import type { RouteLocation, RouteLocationMatched, RouteLocationNormalizedLoaded } from 'vue-router';
+import { cloneDeep } from 'lodash-es';
 
 export function cloneRoute(route: RouteLocationNormalizedLoaded): RouteLocationNormalizedLoaded {
   return {

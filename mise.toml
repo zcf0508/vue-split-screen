@@ -1,0 +1,3 @@
+[tools]
+pnpm = "12"
+node = { version = "22", corepack = false }

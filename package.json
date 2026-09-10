@@ -2,8 +2,8 @@
   "name": "vue-split-screen",
   "type": "module",
   "version": "0.0.12",
-  "packageManager": "pnpm@8.15.7",
-  "description": "",
+  "packageManager": "pnpm@12.3.4",
+  "description": "Adaptive split-screen routing for Vue",
   "author": "zcf0508 <zcf0508@live.com>",
   "license": "MIT",
   "homepage": "https://github.com/zcf0508/vue-split-screen#readme",
@@ -35,44 +35,49 @@
   "files": [
     "dist"
   ],
+  "engines": {
+    "node": ">=22.18.0"
+  },
   "scripts": {
-    "build": "unbuild",
-    "dev": "unbuild --stub",
-    "format": "eslint . --fix",
+    "build": "tsdown",
+    "dev": "tsdown --watch",
     "lint": "eslint .",
-    "prepublishOnly": "npm run build",
-    "release": "bumpp",
-    "start": "esno src/index.ts",
-    "test": "vitest",
-    "typecheck": "tsc --noEmit",
-    "play": "npm -C playground run dev",
-    "play:build": "npm run build && npm -C playground run build",
-    "play:serve": "npm -C playground run serve"
+    "lint:fix": "eslint . --fix",
+    "typecheck": "pnpm typecheck:lib && pnpm typecheck:playground",
+    "typecheck:lib": "tsc --noEmit -p tsconfig.json",
+    "typecheck:playground": "vue-tsc --noEmit -p playground/tsconfig.json",
+    "test": "vitest run --project unit",
+    "test:browser": "vitest run --project browser",
+    "test:all": "vitest run",
+    "test:watch": "vitest",
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm play:build",
+    "release": "bumpp --commit --tag --push",
+    "play": "pnpm --dir playground dev",
+    "play:build": "pnpm --dir playground build",
+    "play:serve": "pnpm --dir playground preview"
   },
   "peerDependencies": {
     "vue": "^3.2.0",
-    "vue-router": "^4.0.0"
+    "vue-router": "^4.1.0"
   },
   "dependencies": {
-    "lodash-es": "^4.17.21",
-    "vue": "^3.4.25",
-    "vue-router": "^4.1.6"
+    "lodash-es": "^4.18.1"
   },
   "devDependencies": {
-    "@antfu/eslint-config": "^2.16.0",
-    "@types/lodash-es": "^4.17.7",
-    "@types/node": "^20.12.7",
-    "@typescript-eslint/eslint-plugin": "^7.7.1",
-    "@typescript-eslint/parser": "^7.7.1",
-    "bumpp": "^8.2.1",
-    "eslint": "^9.1.1",
-    "eslint-plugin-security": "^3.0.0",
-    "esno": "^0.16.3",
-    "pnpm": "^8.15.7",
-    "rimraf": "^3.0.2",
-    "typescript": "^5.4.5",
-    "unbuild": "^0.8.11",
-    "vite": "^5.2.10",
-    "vitest": "^1.2.1"
+    "@antfu/eslint-config": "^9.5.1",
+    "@types/lodash-es": "^4.17.12",
+    "@types/node": "^22.20.1",
+    "@vitejs/plugin-vue": "^6.0.8",
+    "@vitest/browser-playwright": "^5.0.0",
+    "bumpp": "^12.3.0",
+    "changelogithub": "^15.0.5",
+    "eslint": "^10.10.0",
+    "playwright": "^1.55.0",
+    "tsdown": "^0.23.0",
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.0",
+    "vue": "^3.5.42",
+    "vue-router": "^4.6.4",
+    "vue-tsc": "^3.3.11"
   }
 }

@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+required_node_major=22
+required_node_minor=18
+
+node -e "
+const [major, minor] = process.versions.node.split('.').map(Number)
+if (major < $required_node_major || (major === $required_node_major && minor < $required_node_minor)) {
+  console.error('Node.js >= $required_node_major.$required_node_minor is required')
+  process.exit(1)
+}
+"
+
+echo ':: installing pnpm 12.3.4'
+if ! pnpm_version="$(pnpm --version 2>/dev/null)" || [[ "$pnpm_version" != '12.3.4' ]]; then
+  # Corepack versions bundled with some Node releases still expect pnpm's old
+  # pnpm.cjs entrypoint, while pnpm 12 ships pnpm.mjs.
+  npm install --global --force pnpm@12.3.4
+fi
+
+echo ':: installing workspace dependencies'
+time pnpm install --frozen-lockfile
+
+echo ':: installing Chromium for Vitest Browser Mode'
+time pnpm exec playwright install chromium

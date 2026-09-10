@@ -21,7 +21,7 @@ service.interceptors.request.use(
 
 // 响应拦截器
 service.interceptors.response.use(
-  (response: AxiosResponse<{ code: number, data: any }, any>) => {
+  (response: AxiosResponse<{ code: number; data: any }, any>) => {
     const status = response.status;
     const res = response.data;
 

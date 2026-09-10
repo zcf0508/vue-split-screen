@@ -1,3 +1,13 @@
+minimumReleaseAgeExcludePrune: true
+
+trustPolicy: no-downgrade
+trustPolicyExclude:
+  - undici-types@6.21.0
+
+shellEmulator: true
+
 packages:
   - playground
-  - examples/*
+
+allowBuilds:
+  esbuild: true

@@ -34,7 +34,7 @@ const reverse = ref(false);
 ## Contributors
 
 <a href="https://github.com/zcf0508/vue-split-screen/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=zcf0508/vue-split-screen" />
+  <img src="https://contrib.rocks/image?repo=zcf0508/vue-split-screen" alt="Project contributors" />
 </a>
 
 ## License

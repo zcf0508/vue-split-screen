@@ -1,5 +1,5 @@
 interface TestReturnType {
-  a: number
+  a: number;
 };
 
 export function testApi() {
@@ -7,9 +7,4 @@ export function testApi() {
     url: 'test/url',
     method: 'get',
   });
-}
-
-async function test() {
-  const res = await testApi();
-  console.log(res.a);
 }

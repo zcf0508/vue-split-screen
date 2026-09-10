@@ -1,25 +1,25 @@
 import type { VNode } from 'vue';
-import { computed, defineComponent, h, nextTick, onMounted, provide, reactive, ref, unref, watch } from 'vue';
 import type { RouteLocationNormalizedLoaded } from 'vue-router';
-import { RouteRecordRaw, useRoute, useRouter } from 'vue-router';
+import { computed, defineComponent, h, onMounted, provide, ref, unref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { useNavigationListener } from '../../hooks/useNavigationListener';
 import { getRealRouteKey, routerCallbackKey, rowRouterPushKey, rowRouterReplaceKey } from '../constants';
+import { ScreenProxy } from './ScreenProxy';
 import { SplitPlaceholder } from './SplitPlaceholder';
 import { SplitScreenProxy } from './SplitScreenProxy';
-import { ScreenProxy } from './ScreenProxy';
 import { cloneRoute } from './utils';
 
 interface SplitSlot {
-  key: string
-  route: RouteLocationNormalizedLoaded
-  slot?: VNode[]
+  key: string;
+  route: RouteLocationNormalizedLoaded;
+  slot: VNode[] | undefined;
 };
 
 type SplitSlots = [SplitSlot] | [SplitSlot, SplitSlot];
 
 interface SlotQueueItem {
-  routePath: string
-  splitSlots: SplitSlots
+  routePath: string;
+  splitSlots: SplitSlots;
 };
 
 export const SplitScreen = defineComponent({
@@ -66,13 +66,14 @@ export const SplitScreen = defineComponent({
         slots.push(current.splitSlots[0]);
       }
 
-      allSlots.value.push({
-        key: new Date().getTime().toString(),
+      const nextSlot: SplitSlot = {
+        key: Date.now().toString(),
         route: cloneRoute(route),
         slot: ctx.slots.default?.(),
-      });
+      };
+      allSlots.value.push(nextSlot);
 
-      slots.push(allSlots.value[allSlots.value.length - 1]);
+      slots.push(nextSlot);
 
       slotQueue.value.splice(queueIdx.value + 1, slotQueue.value.length - queueIdx.value - 1, {
         routePath: route.path,
@@ -92,13 +93,14 @@ export const SplitScreen = defineComponent({
           slots.push(current.splitSlots[0]);
         }
       }
-      allSlots.value.push({
-        key: new Date().getTime().toString(),
+      const nextSlot: SplitSlot = {
+        key: Date.now().toString(),
         route: cloneRoute(route),
         slot: ctx.slots.default?.(),
-      });
+      };
+      allSlots.value.push(nextSlot);
 
-      slots.push(allSlots.value[allSlots.value.length - 1]);
+      slots.push(nextSlot);
 
       slotQueue.value.splice(queueIdx.value, slotQueue.value.length - queueIdx.value, {
         routePath: route.path,
@@ -161,12 +163,6 @@ export const SplitScreen = defineComponent({
       return cloneRoute(route);
     });
 
-    watch(() => [slotQueue.value, queueIdx.value], (val) => {
-      console.log(val);
-    }, {
-      deep: true,
-    });
-
     provide(rowRouterPushKey, router.push);
     provide(rowRouterReplaceKey, router.replace);
 
@@ -174,6 +170,7 @@ export const SplitScreen = defineComponent({
       const currentSlot = slotQueue.value[queueIdx.value];
 
       if (!props.turnOn) {
+        const visibleKey = currentSlot?.splitSlots.at(-1)?.key;
         return () => [
           ...allSlots.value.map((slot, index) => h(
             ScreenProxy,
@@ -181,7 +178,7 @@ export const SplitScreen = defineComponent({
               key: slot.key,
               route: slot.route,
               left: allSlots.value.length > 1 && index === 0,
-              style: slot.key === currentSlot.splitSlots[currentSlot.splitSlots.length - 1]?.key
+              style: slot.key === visibleKey
                 ? ''
                 : 'display: none;',
             },

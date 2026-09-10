@@ -1,7 +1,7 @@
 import { createApp } from 'vue';
-import App from './App.vue';
-import { hamiVuex } from '@/store';
 import router from '@/router';
+import { hamiVuex } from '@/store';
+import App from './App.vue';
 import 'animate.css';
 import 'uno.css';
 
