@@ -1,17 +1,40 @@
 import type { App, Component } from 'vue';
 import { afterEach, describe, expect, it } from 'vitest';
-import { createApp, defineComponent, h, nextTick } from 'vue';
+import {
+  createApp,
+  defineComponent,
+  h,
+  nextTick,
+  onActivated,
+  onDeactivated,
+  onMounted,
+  onUnmounted,
+} from 'vue';
 import { createMemoryHistory, createRouter, RouterView, useRoute, useRouter } from 'vue-router';
 import { SplitScreen } from '../src';
 
 const mountedApps: Array<{ app: App; root: HTMLElement }> = [];
 
-function page(name: string): Component {
+interface LifecycleCounts {
+  activated: number;
+  deactivated: number;
+  mounted: number;
+  unmounted: number;
+}
+
+function page(name: string, lifecycle?: Record<string, LifecycleCounts>): Component {
   return defineComponent({
     name: `${name}Page`,
     setup() {
       const route = useRoute();
       const router = useRouter();
+      const counts = lifecycle?.[name];
+      if (counts) {
+        onActivated(() => counts.activated++);
+        onDeactivated(() => counts.deactivated++);
+        onMounted(() => counts.mounted++);
+        onUnmounted(() => counts.unmounted++);
+      }
       return () => h('section', { 'data-page': name, 'data-page-route': route.fullPath }, [
         h('button', {
           'data-action': 'push-d',
@@ -34,12 +57,16 @@ function page(name: string): Component {
   });
 }
 
-async function mountAt(path: string) {
+async function mountAt(
+  path: string,
+  maxInactivePages = 0,
+  lifecycle?: Record<string, LifecycleCounts>,
+) {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: ['a', 'b', 'c', 'd'].map(name => ({
       path: `/${name}`,
-      component: page(name.toUpperCase()),
+      component: page(name.toUpperCase(), lifecycle),
     })),
   });
   await router.push(path);
@@ -51,7 +78,7 @@ async function mountAt(path: string) {
     setup: () => () => h(RouterView, null, {
       default: ({ Component: routeComponent }: { Component: Component }) => h(
         SplitScreen,
-        { turnOn: true },
+        { maxInactivePages, turnOn: true },
         { default: () => h(routeComponent) },
       ),
     }),
@@ -79,6 +106,10 @@ function click(root: HTMLElement, route: string, action: string) {
 
 async function expectPanes(root: HTMLElement, expected: string[]) {
   await expect.poll(() => paneRoutes(root)).toEqual(expected);
+}
+
+function lifecycleCounts(): LifecycleCounts {
+  return { activated: 0, deactivated: 0, mounted: 0, unmounted: 0 };
 }
 
 afterEach(() => {
@@ -113,5 +144,54 @@ describe('split-screen browser navigation', () => {
     click(root, '/b', 'replace-d');
 
     await expectPanes(root, ['/a', '/d']);
+  });
+
+  it('unmounts pages as soon as they become inactive by default', async () => {
+    const lifecycle = {
+      A: lifecycleCounts(),
+      B: lifecycleCounts(),
+      C: lifecycleCounts(),
+      D: lifecycleCounts(),
+    };
+    const { root } = await mountAt('/a', 0, lifecycle);
+    click(root, '/a', 'push-b');
+    await expectPanes(root, ['/a', '/b']);
+
+    click(root, '/b', 'push-c');
+
+    await expectPanes(root, ['/b', '/c']);
+    await expect.poll(() => lifecycle.A.unmounted).toBe(1);
+    expect(root.querySelector('[data-split-screen]')?.getAttribute('data-split-retained')).toBe('');
+  });
+
+  it('deactivates retained pages, evicts by LRU, and activates cache hits', async () => {
+    const lifecycle = {
+      A: lifecycleCounts(),
+      B: lifecycleCounts(),
+      C: lifecycleCounts(),
+      D: lifecycleCounts(),
+    };
+    const { root, router } = await mountAt('/a', 1, lifecycle);
+    click(root, '/a', 'push-b');
+    await expectPanes(root, ['/a', '/b']);
+    click(root, '/b', 'push-c');
+    await expectPanes(root, ['/b', '/c']);
+    await expect.poll(() => lifecycle.A).toMatchObject({ deactivated: 1, unmounted: 0 });
+    const bNodeId = root.querySelector<HTMLElement>('[data-split-route="/b"]')?.dataset.splitNode;
+
+    click(root, '/c', 'push-d');
+
+    await expectPanes(root, ['/c', '/d']);
+    await expect.poll(() => lifecycle.A.unmounted).toBe(1);
+    expect(lifecycle.B).toMatchObject({ deactivated: 1, unmounted: 0 });
+    expect(root.querySelector('[data-split-screen]')?.getAttribute('data-split-retained')).toBe(
+      bNodeId,
+    );
+
+    router.back();
+
+    await expectPanes(root, ['/b', '/c']);
+    await expect.poll(() => lifecycle.B.activated).toBe(2);
+    expect(lifecycle.B.mounted).toBe(1);
   });
 });

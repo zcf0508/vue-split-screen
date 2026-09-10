@@ -1,11 +1,11 @@
 import type { Component, VNode } from 'vue';
 import type { RouteLocationNormalizedLoaded } from 'vue-router';
 import type { SplitRouteNode, SplitTrail } from '../../model';
-import { cloneVNode, defineComponent, h, nextTick, onBeforeUnmount, shallowReactive, watch } from 'vue';
+import { cloneVNode, defineComponent, h, nextTick, onBeforeUnmount, shallowReactive, shallowRef, watch } from 'vue';
 import { loadRouteLocation, useRoute, useRouter } from 'vue-router';
-import { presentTrail } from '../../model';
+import { presentTrail, selectRetainedPageIds } from '../../model';
 import { createSplitHistoryController } from '../../router';
-import { ScreenProxy } from './ScreenProxy';
+import { PageHost } from './PageHost';
 import { SplitPlaceholder } from './SplitPlaceholder';
 
 interface PageRecord {
@@ -46,12 +46,26 @@ export const SplitScreen = defineComponent({
       type: Boolean,
       default: () => false,
     },
+    maxInactivePages: {
+      type: Number,
+      default: () => 0,
+      validator: (value: number) => Number.isInteger(value) && value >= 0,
+    },
   },
   setup: (props, ctx) => {
     const route = useRoute();
     const router = useRouter();
     const controller = createSplitHistoryController(router);
     const records = shallowReactive(new Map<string, PageRecord>());
+    const retainedIds = shallowRef<readonly string[]>([]);
+    let recency: readonly string[] = [];
+
+    function activeNodes(trail: SplitTrail): SplitRouteNode[] {
+      const presentation = presentTrail(trail);
+      return props.turnOn && presentation.companion
+        ? [presentation.companion, presentation.current]
+        : [presentation.current];
+    }
 
     function captureCurrent(trail: SplitTrail) {
       const node = trail.at(-1)!;
@@ -79,6 +93,25 @@ export const SplitScreen = defineComponent({
     captureCurrent(controller.trail.value);
 
     watch(
+      [controller.trail, () => props.turnOn, () => props.maxInactivePages],
+      ([trail]) => {
+        const active = activeNodes(trail);
+        const selection = selectRetainedPageIds(
+          trail,
+          active.map(node => node.id),
+          recency,
+          props.maxInactivePages,
+        );
+        recency = selection.recency;
+        retainedIds.value = selection.retained;
+
+        const needed = new Set([...active.map(node => node.id), ...selection.retained]);
+        void Promise.all(trail.filter(node => needed.has(node.id)).map(ensureRecord));
+      },
+      { immediate: true },
+    );
+
+    watch(
       [controller.trail, () => route.fullPath],
       async ([trail]) => {
         await nextTick();
@@ -93,32 +126,37 @@ export const SplitScreen = defineComponent({
     return () => h(
       'div',
       {
+        'data-split-retained': retainedIds.value.join(','),
         'data-split-screen': '',
         'style': `display: flex; width: 100%; flex-direction: ${props.splitReverse ? 'row-reverse' : 'row'};`,
       },
       (() => {
-        const presentation = presentTrail(controller.trail.value);
-        const nodes = props.turnOn && presentation.companion
-          ? [presentation.companion, presentation.current]
-          : [presentation.current];
-        const panes = nodes.map((node) => {
+        const trail = controller.trail.value;
+        const presentation = presentTrail(trail);
+        const active = activeNodes(trail);
+        const activeIds = new Set(active.map(node => node.id));
+        const retained = retainedIds.value
+          .map(id => trail.find(node => node.id === id))
+          .filter((node): node is SplitRouteNode => node !== undefined && !activeIds.has(node.id));
+        const panes = [...active, ...retained].map((node) => {
           const record = records.get(node.id);
           return record
             ? h(
-                ScreenProxy,
+                PageHost,
                 {
                   key: node.id,
-                  node,
-                  route: record.route,
+                  active: activeIds.has(node.id),
                   controller,
+                  node,
+                  renderPage: record.render,
+                  route: record.route,
                 },
-                record.render,
               )
             : null;
         });
 
         if (props.turnOn && !presentation.companion) {
-          panes.push(h(
+          panes.splice(active.length, 0, h(
             'div',
             {
               key: 'placeholder',
