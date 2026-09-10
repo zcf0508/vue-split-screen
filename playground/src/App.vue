@@ -49,6 +49,7 @@ const onboardingContent = {
 const route = useRoute();
 const router = useRouter();
 const split = ref(true);
+const splitPresentation = ref(split.value);
 const reverse = ref(false);
 const maxInactivePages = ref(0);
 const trail = ref<SplitRouteNode[]>([]);
@@ -149,10 +150,11 @@ onBeforeUnmount(removeAfterEach);
       <FoldableMockup
         :is-open="split"
         :language="onboardingLanguage"
+        @presentation-change="splitPresentation = $event"
       >
         <SplitScreen
           class="device-split-screen"
-          :turn-on="split"
+          :turn-on="splitPresentation"
           :split-reverse="reverse"
           :max-inactive-pages="maxInactivePages"
         >

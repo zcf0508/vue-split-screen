@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, toRef, watch } from 'vue';
+import { useFoldTransition } from '@/composables/useFoldTransition';
+import { usePaneClone } from '@/composables/usePaneClone';
 
 type FoldableLanguage = 'zh' | 'en';
 
@@ -7,6 +9,29 @@ const props = defineProps<{
   isOpen: boolean;
   language: FoldableLanguage;
 }>();
+
+const emit = defineEmits<{
+  presentationChange: [isOpen: boolean];
+}>();
+
+const foldTiming = { duration: 1350, midpoint: 500 };
+const fixedClone = ref<HTMLElement>();
+const screenContent = ref<HTMLElement>();
+const { clear, clonePane, clonePaneAfterRender } = usePaneClone(screenContent, fixedClone);
+const { phase, presentationOpen, settledOpen } = useFoldTransition(toRef(props, 'isOpen'), foldTiming);
+
+watch(presentationOpen, isOpen => emit('presentationChange', isOpen));
+watch(phase, (currentPhase) => {
+  if (currentPhase === 'closing-inner') {
+    clonePane(1);
+  }
+  else if (currentPhase === 'opening-inner') {
+    clonePaneAfterRender(1, () => phase.value === 'opening-inner');
+  }
+  else {
+    clear();
+  }
+});
 
 const copy = computed(() => ({
   en: {
@@ -35,7 +60,9 @@ const copy = computed(() => ({
 <template>
   <section
     class="foldable-preview"
-    :class="{ 'is-open': isOpen }"
+    :class="{ 'is-open': isOpen, 'is-settled': settledOpen }"
+    :data-fold-phase="phase"
+    :style="{ '--fold-midpoint': `${foldTiming.midpoint}ms` }"
     aria-labelledby="foldable-preview-title"
   >
     <div class="foldable-copy">
@@ -58,33 +85,36 @@ const copy = computed(() => ({
     <div class="foldable-visual">
       <div class="foldable-shadow" aria-hidden="true" />
       <div class="foldable-device">
-        <div class="device-cover" aria-hidden="true">
-          <div class="cover-screen">
-            <div class="cover-island" />
-            <div class="cover-home-indicator" />
+        <div class="device-stage">
+          <div class="fixed-half" aria-hidden="true">
+            <div class="fixed-screen">
+              <div class="device-camera" />
+            </div>
+            <div ref="fixedClone" class="foldable-content fixed-content-clone" data-fold-clone />
           </div>
-        </div>
 
-        <div class="device-panel device-panel-left" aria-hidden="true">
-          <div class="device-screen">
-            <div class="device-camera" />
+          <div class="moving-half">
+            <div class="moving-face outer-face" aria-hidden="true">
+              <div class="outer-screen">
+                <div class="cover-island" />
+                <div class="cover-home-indicator" />
+              </div>
+            </div>
+
+            <div class="moving-face inner-face" aria-hidden="true" />
+
+            <div class="content-face">
+              <div ref="screenContent" class="foldable-content">
+                <slot />
+              </div>
+            </div>
           </div>
-        </div>
 
-        <div class="foldable-hinge" aria-hidden="true">
-          <i />
-          <i />
-          <i />
-        </div>
-
-        <div class="device-panel device-panel-right" aria-hidden="true">
-          <div class="device-screen device-screen-current">
-            <div class="device-camera" />
+          <div class="foldable-hinge" aria-hidden="true">
+            <i />
+            <i />
+            <i />
           </div>
-        </div>
-
-        <div class="foldable-content">
-          <slot />
         </div>
       </div>
     </div>
@@ -185,7 +215,8 @@ const copy = computed(() => ({
   display: grid;
   place-items: center;
   min-height: var(--device-height);
-  perspective: 1100px;
+  perspective: 1500px;
+  perspective-origin: 54% 46%;
 }
 
 .foldable-shadow {
@@ -196,8 +227,8 @@ const copy = computed(() => ({
   background: oklch(5% 0.01 75deg / 58%);
   border-radius: 50%;
   filter: blur(15px);
-  transform: scaleX(0.86);
-  transition: transform 850ms cubic-bezier(0.16, 1, 0.3, 1), opacity 850ms cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateX(0) scaleX(0.86);
+  transition: transform 1350ms cubic-bezier(0.45, 0, 0.2, 1), opacity 1350ms cubic-bezier(0.45, 0, 0.2, 1);
 }
 
 .foldable-device {
@@ -212,138 +243,141 @@ const copy = computed(() => ({
   height: var(--device-height);
   transform: rotateX(5deg) rotateZ(-2deg);
   transform-style: preserve-3d;
-  transition: transform 850ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.device-panel,
-.device-cover {
+.device-stage {
+  position: absolute;
+  inset: 0;
+  transform: translateX(-25%);
+  transform-style: preserve-3d;
+  transition: transform 1350ms cubic-bezier(0.45, 0, 0.2, 1);
+}
+
+.is-open .device-stage {
+  transform: translateX(0);
+}
+
+.fixed-half,
+.moving-face {
   position: absolute;
   top: 0;
-  width: calc(50% - 10px);
+  width: 50%;
   height: 100%;
   padding: 6px;
   background: linear-gradient(145deg, oklch(52% 0.025 75deg), oklch(21% 0.02 75deg) 27%, oklch(8% 0.012 75deg));
   border: 1px solid oklch(60% 0.025 75deg);
-  border-radius: var(--device-radius);
   box-shadow: 0 24px 34px oklch(5% 0.01 75deg / 48%), inset 0 0 0 1px oklch(82% 0.015 75deg / 24%);
+  backface-visibility: hidden;
   transform-style: preserve-3d;
-  transition: transform 850ms cubic-bezier(0.16, 1, 0.3, 1), opacity 850ms cubic-bezier(0.16, 1, 0.3, 1), filter 850ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.device-panel::before,
-.device-cover::before {
+.fixed-half::before,
+.moving-face::before {
   position: absolute;
   z-index: -1;
   inset: 5px -4px -5px;
   background: linear-gradient(145deg, oklch(62% 0.02 75deg), oklch(17% 0.015 75deg) 42%, oklch(7% 0.01 75deg));
-  border-radius: calc(var(--device-radius) + 1px);
   content: '';
   transform: translateZ(-7px);
 }
 
-.device-panel-left {
-  left: 10px;
-  border-radius: var(--device-radius) 0 0 var(--device-radius);
-  transform-origin: right center;
-}
-
-.device-panel-right {
-  right: 10px;
+.fixed-half {
+  z-index: 1;
+  right: 0;
   border-radius: 0 var(--device-radius) var(--device-radius) 0;
-  transform-origin: left center;
 }
 
-.device-panel-left::before {
+.fixed-half::before {
+  border-radius: 0 calc(var(--device-radius) + 1px) calc(var(--device-radius) + 1px) 0;
+}
+
+.moving-half {
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  left: 50%;
+  width: 50%;
+  height: 100%;
+  transform: rotateY(0deg);
+  transform-origin: left center;
+  transform-style: preserve-3d;
+  transition: transform 1350ms cubic-bezier(0.45, 0, 0.2, 1);
+  will-change: transform;
+}
+
+.is-open .moving-half {
+  transform: rotateY(-180deg);
+}
+
+.moving-face {
+  inset: 0;
+  width: 100%;
+  border-radius: 0 var(--device-radius) var(--device-radius) 0;
+}
+
+.moving-face::before {
+  border-radius: 0 calc(var(--device-radius) + 1px) calc(var(--device-radius) + 1px) 0;
+}
+
+.outer-face {
+  transform: translateZ(5px);
+}
+
+.inner-face {
+  overflow: visible;
+  border-radius: var(--device-radius) 0 0 var(--device-radius);
+  transform: rotateY(180deg) translateZ(5px);
+}
+
+.inner-face::before {
   border-radius: calc(var(--device-radius) + 1px) 0 0 calc(var(--device-radius) + 1px);
 }
 
-.device-panel-right::before {
-  border-radius: 0 calc(var(--device-radius) + 1px) calc(var(--device-radius) + 1px) 0;
+.content-face {
+  position: absolute;
+  z-index: 5;
+  inset: 0;
+  backface-visibility: hidden;
+  transform: translateZ(7px);
+  transform-style: preserve-3d;
+  transition: transform 0s var(--fold-midpoint);
 }
 
-.device-cover {
-  z-index: 3;
-  left: 50%;
-  padding: 6px;
-  opacity: 0;
-  border-radius: 0 var(--device-radius) var(--device-radius) 0;
-  transform: translateX(-50%) translateZ(18px) scale(0.88);
-  transform-origin: center;
+.is-open .content-face {
+  transform: rotateY(180deg) translateZ(7px);
 }
 
-.device-cover::before {
-  border-radius: 0 calc(var(--device-radius) + 1px) calc(var(--device-radius) + 1px) 0;
+.fixed-screen,
+.outer-screen {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid oklch(76% 0.015 75deg / 20%);
 }
 
-.foldable-preview:not(.is-open) .device-panel-left {
-  filter: brightness(0.72);
-  transform: rotateY(78deg);
+.fixed-screen {
+  background:
+    radial-gradient(circle at 35% 32%, color-mix(in srgb, oklch(71% 0.14 75deg) 22%, transparent), transparent 44%),
+    linear-gradient(145deg, oklch(23% 0.025 38deg), oklch(10% 0.012 75deg));
+  border-radius: 0 var(--screen-radius) var(--screen-radius) 0;
 }
 
-.foldable-preview:not(.is-open) .device-panel-right {
-  filter: brightness(0.72);
-  transform: rotateY(-78deg);
-}
-
-.foldable-preview:not(.is-open) .device-panel {
-  opacity: 0;
-}
-
-.foldable-preview:not(.is-open) .device-cover {
-  opacity: 1;
-  transform: translateX(-50%) translateZ(18px) scale(1);
-}
-
-.foldable-preview:not(.is-open) .foldable-content {
-  right: auto;
-  left: calc(25% + 12px);
-  width: calc(50% - 24px);
+.fixed-content-clone {
+  position: absolute;
+  z-index: 2;
+  inset: 6px;
+  overflow: hidden;
+  background: oklch(11% 0.012 75deg);
+  border-radius: 0 calc(var(--screen-radius) - 6px) calc(var(--screen-radius) - 6px) 0;
+  pointer-events: none;
 }
 
 .foldable-preview:not(.is-open) .foldable-shadow {
   opacity: 0.72;
-  transform: scaleX(0.5);
+  transform: translateX(-25%) scaleX(0.48);
 }
 
-.device-screen,
-.cover-screen {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  padding: 15px 13px;
-  overflow: hidden;
-  color: oklch(92% 0.02 75deg);
-  background:
-    radial-gradient(circle at 70% 20%, color-mix(in srgb, oklch(70% 0.14 75deg) 18%, transparent), transparent 42%),
-    linear-gradient(145deg, oklch(20% 0.02 250deg), oklch(11% 0.014 75deg));
-  border: 1px solid oklch(76% 0.015 75deg / 20%);
-  border-radius: var(--screen-radius);
-  backface-visibility: hidden;
-}
-
-.device-panel,
-.device-cover,
-.device-screen,
-.cover-screen {
-  pointer-events: none;
-}
-
-.device-screen-current {
-  background:
-    radial-gradient(circle at 68% 32%, color-mix(in srgb, oklch(71% 0.14 75deg) 22%, transparent), transparent 44%),
-    linear-gradient(145deg, oklch(23% 0.025 38deg), oklch(10% 0.012 75deg));
-}
-
-.device-panel-left .device-screen {
-  border-radius: var(--screen-radius) 0 0 var(--screen-radius);
-}
-
-.device-panel-right .device-screen {
-  border-radius: 0 var(--screen-radius) var(--screen-radius) 0;
-}
-
-.cover-screen {
+.outer-screen {
   background:
     radial-gradient(circle at 32% 70%, color-mix(in srgb, oklch(65% 0.1 215deg) 24%, transparent), transparent 46%),
     linear-gradient(145deg, oklch(20% 0.018 215deg), oklch(10% 0.012 75deg));
@@ -376,16 +410,62 @@ const copy = computed(() => ({
 
 .foldable-content {
   position: absolute;
-  z-index: 5;
-  top: 6px;
-  right: 16px;
-  bottom: 6px;
-  left: 16px;
+  z-index: 2;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  padding: 6px;
   overflow: hidden;
-  border-radius: calc(var(--screen-radius) - 6px);
-  pointer-events: auto;
-  transform: translateZ(24px);
-  transition: left 850ms cubic-bezier(0.16, 1, 0.3, 1), right 850ms cubic-bezier(0.16, 1, 0.3, 1), width 850ms cubic-bezier(0.16, 1, 0.3, 1);
+  background:
+    radial-gradient(circle at 72% 30%, oklch(65% 0.1 65deg / 12%), transparent 42%),
+    oklch(11% 0.012 75deg);
+  border: 1px solid oklch(76% 0.015 75deg / 20%);
+  border-radius: 0 var(--screen-radius) var(--screen-radius) 0;
+  transform: translateZ(2px);
+  transition: none;
+}
+
+.is-settled .foldable-content {
+  width: 200%;
+  border-radius: var(--screen-radius);
+}
+
+.foldable-preview:not(.is-settled) .content-face :deep([data-split-screen] > :nth-child(2)) {
+  display: none;
+}
+
+.fixed-content-clone.fixed-content-clone {
+  inset: 6px;
+  width: auto;
+  height: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0 calc(var(--screen-radius) - 6px) calc(var(--screen-radius) - 6px) 0;
+  transform: none;
+  transition: none;
+}
+
+.fixed-content-clone::after {
+  display: none;
+}
+
+.foldable-content::after {
+  position: absolute;
+  z-index: 8;
+  top: 6px;
+  bottom: 6px;
+  left: 50%;
+  width: 16px;
+  background: linear-gradient(90deg, transparent, oklch(3% 0.01 75deg / 52%) 46%, oklch(92% 0.02 75deg / 9%) 54%, transparent);
+  content: '';
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.is-settled .foldable-content::after {
+  opacity: 1;
 }
 
 .foldable-content :deep([data-split-screen]) {
@@ -407,6 +487,13 @@ const copy = computed(() => ({
   border: 0 !important;
   border-radius: 0 !important;
   background: transparent !important;
+}
+
+.fixed-content-clone :deep([data-fold-pane-clone]) {
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  flex: none !important;
 }
 
 .foldable-content :deep(.page) {
@@ -518,12 +605,14 @@ const copy = computed(() => ({
   border-radius: 999px;
   box-shadow: 0 0 10px oklch(85% 0.02 75deg / 25%);
   pointer-events: none;
-  transform: translateX(-50%) translateZ(32px);
-  transition: opacity 250ms ease;
+  opacity: 0.25;
+  transform: translateX(-50%) translateZ(10px) scaleY(0.96);
+  transition: opacity 600ms ease, transform 1350ms cubic-bezier(0.45, 0, 0.2, 1);
 }
 
-.foldable-preview:not(.is-open) .foldable-hinge {
-  opacity: 0;
+.is-open .foldable-hinge {
+  opacity: 1;
+  transform: translateX(-50%) translateZ(15px) scaleY(1);
 }
 
 .foldable-hinge i {
@@ -593,6 +682,19 @@ const copy = computed(() => ({
     left: auto;
     margin-left: 0;
     transform: rotateX(5deg) rotateZ(-2deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .device-stage,
+  .moving-half,
+  .content-face,
+  .foldable-shadow,
+  .foldable-hinge,
+  .foldable-content,
+  .foldable-content::after {
+    transition-duration: 1ms;
+    transition-delay: 0ms;
   }
 }
 </style>
