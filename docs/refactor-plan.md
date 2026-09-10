@@ -42,13 +42,13 @@ For `[A, B, C]`, currently presenting `B | C`:
 
 Every step must keep lint, type checking, unit tests, the library build, and the playground build green.
 
-1. Add the pure split-history model and asymmetric transition tests.
-2. Add browser-history serialization and the Vue Router adapter.
-3. Replace the legacy component implementation and remove obsolete queue/proxy code.
-4. Add bounded inactive-page retention.
-5. Rebuild the playground as an executable behavior specification.
-6. Add Vitest Browser Mode integration coverage for navigation and lifecycle behavior.
-7. Update public documentation and package exports.
+- [x] Add the pure split-history model and asymmetric transition tests.
+- [x] Add browser-history serialization and the Vue Router adapter.
+- [x] Replace the legacy component implementation and remove obsolete queue/proxy code.
+- [x] Add bounded inactive-page retention.
+- [x] Rebuild the playground as an executable behavior specification.
+- [x] Add Vitest Browser Mode integration coverage for navigation and lifecycle behavior.
+- [x] Update public documentation and package exports.
 
 ## Explicit boundaries
 

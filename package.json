@@ -12,7 +12,12 @@
     "url": "git+https://github.com/zcf0508/vue-split-screen.git"
   },
   "bugs": "https://github.com/zcf0508/vue-split-screen/issues",
-  "keywords": [],
+  "keywords": [
+    "foldable",
+    "split-screen",
+    "vue",
+    "vue-router"
+  ],
   "sideEffects": false,
   "exports": {
     ".": {
