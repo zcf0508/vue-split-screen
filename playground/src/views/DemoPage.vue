@@ -24,62 +24,64 @@ onUnmounted(() => lifecycle.value.unmounted++);
 
 <template>
   <article class="page" :style="{ '--accent': accent }">
-    <div class="page-heading">
-      <div>
-        <span class="page-label">pane route</span>
-        <h2>{{ title }}</h2>
+    <div class="page-content">
+      <div class="page-heading">
+        <div>
+          <span class="page-label">pane route</span>
+          <h2>{{ title }}</h2>
+        </div>
+        <span class="page-badge">{{ route.fullPath }}</span>
       </div>
-      <span class="page-badge">{{ route.fullPath }}</span>
+
+      <dl class="page-facts">
+        <div>
+          <dt>node</dt>
+          <dd>{{ shortId }}</dd>
+        </div>
+        <div>
+          <dt>mounted</dt>
+          <dd>{{ lifecycle.mounted }}</dd>
+        </div>
+        <div>
+          <dt>activated</dt>
+          <dd>{{ lifecycle.activated }}</dd>
+        </div>
+        <div>
+          <dt>deactivated</dt>
+          <dd>{{ lifecycle.deactivated }}</dd>
+        </div>
+      </dl>
+
+      <label class="state-field">
+        Local component state
+        <input v-model="draft" placeholder="Type, navigate, then go back">
+      </label>
+
+      <section class="actions">
+        <div>
+          <span>push from this pane</span>
+          <button v-for="target in ['a', 'b', 'c', 'd']" :key="target" @click="router.push(`/${target}`)">
+            {{ target.toUpperCase() }}
+          </button>
+        </div>
+        <div>
+          <span>other navigation</span>
+          <button @click="router.replace('/d')">
+            replace → D
+          </button>
+          <button @click="router.push('/redirect')">
+            redirect → D
+          </button>
+          <button @click="router.push('/blocked')">
+            blocked
+          </button>
+        </div>
+      </section>
+
+      <p class="contract-note">
+        Every action here uses <code>useSplitRouter()</code>, so its origin is this node—not the address-bar route.
+      </p>
     </div>
-
-    <dl class="page-facts">
-      <div>
-        <dt>node</dt>
-        <dd>{{ shortId }}</dd>
-      </div>
-      <div>
-        <dt>mounted</dt>
-        <dd>{{ lifecycle.mounted }}</dd>
-      </div>
-      <div>
-        <dt>activated</dt>
-        <dd>{{ lifecycle.activated }}</dd>
-      </div>
-      <div>
-        <dt>deactivated</dt>
-        <dd>{{ lifecycle.deactivated }}</dd>
-      </div>
-    </dl>
-
-    <label class="state-field">
-      Local component state
-      <input v-model="draft" placeholder="Type, navigate, then go back">
-    </label>
-
-    <section class="actions">
-      <div>
-        <span>push from this pane</span>
-        <button v-for="target in ['a', 'b', 'c', 'd']" :key="target" @click="router.push(`/${target}`)">
-          {{ target.toUpperCase() }}
-        </button>
-      </div>
-      <div>
-        <span>other navigation</span>
-        <button @click="router.replace('/d')">
-          replace → D
-        </button>
-        <button @click="router.push('/redirect')">
-          redirect → D
-        </button>
-        <button @click="router.push('/blocked')">
-          blocked
-        </button>
-      </div>
-    </section>
-
-    <p class="contract-note">
-      Every action here uses <code>useSplitRouter()</code>, so its origin is this node—not the address-bar route.
-    </p>
   </article>
 </template>
 
@@ -89,7 +91,6 @@ onUnmounted(() => lifecycle.value.unmounted++);
   padding: 28px;
   color: oklch(88% 0.018 75deg);
   background: oklch(18% 0.01 75deg);
-  box-shadow: inset 0 1px var(--accent);
 }
 
 .page-heading {

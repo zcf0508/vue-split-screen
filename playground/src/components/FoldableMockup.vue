@@ -93,13 +93,15 @@ const copy = computed(() => ({
 
 <style scoped>
 .foldable-preview {
+  --device-height: clamp(457px, min(45.7vw, 58.6vh), 840px);
+  --device-width: clamp(640px, min(64vw, 82vh), 1180px);
   position: relative;
   display: grid;
-  grid-template-columns: minmax(250px, 0.7fr) minmax(500px, 1.3fr);
+  grid-template-columns: minmax(280px, 0.7fr) minmax(560px, 1.3fr);
   align-items: center;
   min-width: 0;
-  min-height: 470px;
-  max-width: 1440px;
+  min-height: clamp(525px, max(calc(var(--device-height) + 68px), calc(100dvh - 175px)), 1260px);
+  max-width: min(2200px, calc(100vw - 48px));
   margin: 0 auto 12px;
   padding: 34px 42px;
   overflow: hidden;
@@ -125,7 +127,7 @@ const copy = computed(() => ({
 .foldable-copy {
   position: relative;
   z-index: 1;
-  max-width: 360px;
+  max-width: 400px;
 }
 
 .foldable-eyebrow {
@@ -182,14 +184,14 @@ const copy = computed(() => ({
   position: relative;
   display: grid;
   place-items: center;
-  min-height: 430px;
+  min-height: var(--device-height);
   perspective: 1100px;
 }
 
 .foldable-shadow {
   position: absolute;
   bottom: 9px;
-  width: 550px;
+  width: var(--device-width);
   height: 32px;
   background: oklch(5% 0.01 75deg / 58%);
   border-radius: 50%;
@@ -199,10 +201,15 @@ const copy = computed(() => ({
 }
 
 .foldable-device {
+  --content-scale: clamp(1, calc(var(--device-width) / 640px), 1.85);
+  --content-safe-x: calc(clamp(15px, 1.6vw, 24px) * var(--content-scale));
+  --content-safe-y: calc(clamp(18px, 1.8vw, 26px) * var(--content-scale));
+  --device-radius: clamp(34px, 3vw, 52px);
+  --screen-radius: clamp(27px, 2.5vw, 44px);
   position: relative;
   z-index: 1;
-  width: 560px;
-  height: 400px;
+  width: var(--device-width);
+  height: var(--device-height);
   transform: rotateX(5deg) rotateZ(-2deg);
   transform-style: preserve-3d;
   transition: transform 850ms cubic-bezier(0.16, 1, 0.3, 1);
@@ -212,12 +219,12 @@ const copy = computed(() => ({
 .device-cover {
   position: absolute;
   top: 0;
-  width: 270px;
-  height: 400px;
+  width: calc(50% - 10px);
+  height: 100%;
   padding: 6px;
   background: linear-gradient(145deg, oklch(52% 0.025 75deg), oklch(21% 0.02 75deg) 27%, oklch(8% 0.012 75deg));
   border: 1px solid oklch(60% 0.025 75deg);
-  border-radius: 34px;
+  border-radius: var(--device-radius);
   box-shadow: 0 24px 34px oklch(5% 0.01 75deg / 48%), inset 0 0 0 1px oklch(82% 0.015 75deg / 24%);
   transform-style: preserve-3d;
   transition: transform 850ms cubic-bezier(0.16, 1, 0.3, 1), opacity 850ms cubic-bezier(0.16, 1, 0.3, 1), filter 850ms cubic-bezier(0.16, 1, 0.3, 1);
@@ -229,29 +236,29 @@ const copy = computed(() => ({
   z-index: -1;
   inset: 5px -4px -5px;
   background: linear-gradient(145deg, oklch(62% 0.02 75deg), oklch(17% 0.015 75deg) 42%, oklch(7% 0.01 75deg));
-  border-radius: 35px;
+  border-radius: calc(var(--device-radius) + 1px);
   content: '';
   transform: translateZ(-7px);
 }
 
 .device-panel-left {
   left: 10px;
-  border-radius: 34px 0 0 34px;
+  border-radius: var(--device-radius) 0 0 var(--device-radius);
   transform-origin: right center;
 }
 
 .device-panel-right {
   right: 10px;
-  border-radius: 0 34px 34px 0;
+  border-radius: 0 var(--device-radius) var(--device-radius) 0;
   transform-origin: left center;
 }
 
 .device-panel-left::before {
-  border-radius: 35px 0 0 35px;
+  border-radius: calc(var(--device-radius) + 1px) 0 0 calc(var(--device-radius) + 1px);
 }
 
 .device-panel-right::before {
-  border-radius: 0 35px 35px 0;
+  border-radius: 0 calc(var(--device-radius) + 1px) calc(var(--device-radius) + 1px) 0;
 }
 
 .device-cover {
@@ -259,13 +266,13 @@ const copy = computed(() => ({
   left: 50%;
   padding: 6px;
   opacity: 0;
-  border-radius: 0 34px 34px 0;
+  border-radius: 0 var(--device-radius) var(--device-radius) 0;
   transform: translateX(-50%) translateZ(18px) scale(0.88);
   transform-origin: center;
 }
 
 .device-cover::before {
-  border-radius: 0 35px 35px 0;
+  border-radius: 0 calc(var(--device-radius) + 1px) calc(var(--device-radius) + 1px) 0;
 }
 
 .foldable-preview:not(.is-open) .device-panel-left {
@@ -289,8 +296,8 @@ const copy = computed(() => ({
 
 .foldable-preview:not(.is-open) .foldable-content {
   right: auto;
-  left: calc(50% - 129px);
-  width: 258px;
+  left: calc(25% + 12px);
+  width: calc(50% - 24px);
 }
 
 .foldable-preview:not(.is-open) .foldable-shadow {
@@ -311,8 +318,15 @@ const copy = computed(() => ({
     radial-gradient(circle at 70% 20%, color-mix(in srgb, oklch(70% 0.14 75deg) 18%, transparent), transparent 42%),
     linear-gradient(145deg, oklch(20% 0.02 250deg), oklch(11% 0.014 75deg));
   border: 1px solid oklch(76% 0.015 75deg / 20%);
-  border-radius: 27px;
+  border-radius: var(--screen-radius);
   backface-visibility: hidden;
+}
+
+.device-panel,
+.device-cover,
+.device-screen,
+.cover-screen {
+  pointer-events: none;
 }
 
 .device-screen-current {
@@ -322,18 +336,18 @@ const copy = computed(() => ({
 }
 
 .device-panel-left .device-screen {
-  border-radius: 27px 0 0 27px;
+  border-radius: var(--screen-radius) 0 0 var(--screen-radius);
 }
 
 .device-panel-right .device-screen {
-  border-radius: 0 27px 27px 0;
+  border-radius: 0 var(--screen-radius) var(--screen-radius) 0;
 }
 
 .cover-screen {
   background:
     radial-gradient(circle at 32% 70%, color-mix(in srgb, oklch(65% 0.1 215deg) 24%, transparent), transparent 46%),
     linear-gradient(145deg, oklch(20% 0.018 215deg), oklch(10% 0.012 75deg));
-  border-radius: 0 27px 27px 0;
+  border-radius: 0 var(--screen-radius) var(--screen-radius) 0;
 }
 
 .device-camera,
@@ -368,7 +382,7 @@ const copy = computed(() => ({
   bottom: 6px;
   left: 16px;
   overflow: hidden;
-  border-radius: 24px;
+  border-radius: calc(var(--screen-radius) - 6px);
   pointer-events: auto;
   transform: translateZ(24px);
   transition: left 850ms cubic-bezier(0.16, 1, 0.3, 1), right 850ms cubic-bezier(0.16, 1, 0.3, 1), width 850ms cubic-bezier(0.16, 1, 0.3, 1);
@@ -397,14 +411,23 @@ const copy = computed(() => ({
 
 .foldable-content :deep(.page) {
   min-height: 100% !important;
-  padding: 18px 15px !important;
+  padding: var(--content-safe-y) var(--content-safe-x) !important;
   color: oklch(88% 0.018 75deg);
   background: transparent !important;
-  box-shadow: inset 0 1px var(--accent) !important;
+}
+
+.foldable-content :deep(.page-content) {
+  width: calc(100% / var(--content-scale));
+  transform: scale(var(--content-scale));
+  transform-origin: top left;
 }
 
 .foldable-content :deep(.page-heading) {
   gap: 8px;
+}
+
+.foldable-content :deep(.page-heading > div) {
+  min-width: 0;
 }
 
 .foldable-content :deep(.page-label),
@@ -416,6 +439,7 @@ const copy = computed(() => ({
 .foldable-content :deep(.page h2) {
   margin-top: 4px;
   font-size: 22px;
+  overflow-wrap: anywhere;
 }
 
 .foldable-content :deep(.page-badge) {
@@ -522,8 +546,10 @@ const copy = computed(() => ({
   transform: translateX(-50%);
 }
 
-@media (max-width: 980px) {
+@media (max-width: 1100px) {
   .foldable-preview {
+    --device-height: 400px;
+    --device-width: 560px;
     grid-template-columns: minmax(210px, 0.66fr) minmax(430px, 1.34fr);
     padding-inline: 24px;
   }
@@ -535,6 +561,8 @@ const copy = computed(() => ({
 
 @media (max-width: 760px) {
   .foldable-preview {
+    --device-height: clamp(223px, 57.14vw, 400px);
+    --device-width: min(80vw, 560px);
     grid-template-columns: minmax(0, 1fr);
     gap: 4px;
     min-height: 0;
@@ -558,13 +586,13 @@ const copy = computed(() => ({
   .foldable-visual {
     min-width: 0;
     width: 100%;
-    min-height: 330px;
+    min-height: var(--device-height);
   }
 
   .foldable-device {
-    left: 50%;
-    margin-left: -280px;
-    transform: scale(0.52) rotateX(5deg) rotateZ(-2deg);
+    left: auto;
+    margin-left: 0;
+    transform: rotateX(5deg) rotateZ(-2deg);
   }
 }
 </style>
