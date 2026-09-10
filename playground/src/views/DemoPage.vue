@@ -64,18 +64,15 @@ onUnmounted(() => lifecycle.value.unmounted++);
         </button>
       </div>
       <div>
-        <span>replace this pane</span>
+        <span>other navigation</span>
         <button @click="router.replace('/d')">
-          replace with D
+          replace → D
         </button>
-      </div>
-      <div>
-        <span>navigation outcomes</span>
         <button @click="router.push('/redirect')">
           redirect → D
         </button>
         <button @click="router.push('/blocked')">
-          blocked by guard
+          blocked
         </button>
       </div>
     </section>

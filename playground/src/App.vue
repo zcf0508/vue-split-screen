@@ -3,6 +3,7 @@ import type { SplitRouteNode } from 'vue-split-screen';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import { RouterView, useRoute, useRouter } from 'vue-router';
 import { SplitScreen } from 'vue-split-screen';
+import FoldableMockup from '@/components/FoldableMockup.vue';
 
 interface StoredSplitState {
   trail: SplitRouteNode[];
@@ -145,20 +146,25 @@ onBeforeUnmount(removeAfterEach);
     </section>
 
     <RouterView v-slot="{ Component }">
-      <SplitScreen
-        class="split-stage"
-        :turn-on="split"
-        :split-reverse="reverse"
-        :max-inactive-pages="maxInactivePages"
+      <FoldableMockup
+        :is-open="split"
+        :language="onboardingLanguage"
       >
-        <component :is="Component" />
-        <template #placeholder>
-          <div class="placeholder">
-            <span>Second pane</span>
-            <strong>Push a route to begin</strong>
-          </div>
-        </template>
-      </SplitScreen>
+        <SplitScreen
+          class="device-split-screen"
+          :turn-on="split"
+          :split-reverse="reverse"
+          :max-inactive-pages="maxInactivePages"
+        >
+          <component :is="Component" />
+          <template #placeholder>
+            <div class="placeholder">
+              <span>Second pane</span>
+              <strong>Push a route to begin</strong>
+            </div>
+          </template>
+        </SplitScreen>
+      </FoldableMockup>
     </RouterView>
 
     <div
@@ -395,13 +401,6 @@ h1 {
   white-space: nowrap;
 }
 
-.split-stage {
-  min-height: 610px;
-  max-width: 1440px;
-  margin: 0 auto;
-  gap: 12px;
-}
-
 [data-split-route] {
   overflow: hidden;
   border: 1px solid oklch(31% 0.012 75deg);
@@ -632,16 +631,6 @@ h1 {
 
   .diagnostics {
     grid-template-columns: 1fr;
-  }
-
-  .split-stage {
-    flex-direction: column !important;
-  }
-
-  .split-stage > [data-split-route],
-  .split-stage > div {
-    width: 100% !important;
-    flex-basis: auto !important;
   }
 
   .onboarding-backdrop {
