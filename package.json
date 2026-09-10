@@ -1,7 +1,7 @@
 {
   "name": "vue-split-screen",
   "type": "module",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "packageManager": "pnpm@12.3.4",
   "description": "Adaptive split-screen routing for Vue",
   "author": "zcf0508 <zcf0508@live.com>",
