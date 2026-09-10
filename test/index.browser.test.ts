@@ -11,7 +11,7 @@ import {
   onUnmounted,
 } from 'vue';
 import { createMemoryHistory, createRouter, RouterView, useRoute, useRouter } from 'vue-router';
-import { SplitScreen } from '../src';
+import { SplitScreen, useSplitRouter } from '../src';
 
 const mountedApps: Array<{ app: App; root: HTMLElement }> = [];
 
@@ -28,6 +28,7 @@ function page(name: string, lifecycle?: Record<string, LifecycleCounts>): Compon
     setup() {
       const route = useRoute();
       const router = useRouter();
+      const splitRouter = useSplitRouter();
       const counts = lifecycle?.[name];
       if (counts) {
         onActivated(() => counts.activated++);
@@ -38,7 +39,7 @@ function page(name: string, lifecycle?: Record<string, LifecycleCounts>): Compon
       return () => h('section', { 'data-page': name, 'data-page-route': route.fullPath }, [
         h('button', {
           'data-action': 'push-d',
-          'onClick': () => router.push('/d'),
+          'onClick': () => splitRouter.push('/d'),
         }, 'push D'),
         h('button', {
           'data-action': 'replace-d',
@@ -46,12 +47,20 @@ function page(name: string, lifecycle?: Record<string, LifecycleCounts>): Compon
         }, 'replace D'),
         h('button', {
           'data-action': 'push-b',
-          'onClick': () => router.push('/b'),
+          'onClick': () => splitRouter.push('/b'),
         }, 'push B'),
         h('button', {
           'data-action': 'push-c',
-          'onClick': () => router.push('/c'),
+          'onClick': () => splitRouter.push('/c'),
         }, 'push C'),
+        h('button', {
+          'data-action': 'redirect',
+          'onClick': () => splitRouter.push('/redirect'),
+        }, 'redirect'),
+        h('button', {
+          'data-action': 'blocked',
+          'onClick': () => splitRouter.push('/blocked'),
+        }, 'blocked'),
       ]);
     },
   });
@@ -64,11 +73,16 @@ async function mountAt(
 ) {
   const router = createRouter({
     history: createMemoryHistory(),
-    routes: ['a', 'b', 'c', 'd'].map(name => ({
-      path: `/${name}`,
-      component: page(name.toUpperCase(), lifecycle),
-    })),
+    routes: [
+      ...['a', 'b', 'c', 'd'].map(name => ({
+        path: `/${name}`,
+        component: page(name.toUpperCase(), lifecycle),
+      })),
+      { path: '/redirect', redirect: '/d?redirected=1' },
+      { path: '/blocked', component: page('BLOCKED', lifecycle) },
+    ],
   });
+  router.beforeEach(to => to.path === '/blocked' ? false : undefined);
   await router.push(path);
   await router.isReady();
 
@@ -144,6 +158,35 @@ describe('split-screen browser navigation', () => {
     click(root, '/b', 'replace-d');
 
     await expectPanes(root, ['/a', '/d']);
+  });
+
+  it('restores exact trails through browser back and forward', async () => {
+    const { root, router } = await mountAt('/a');
+    click(root, '/a', 'push-b');
+    await expectPanes(root, ['/a', '/b']);
+    click(root, '/b', 'push-c');
+    await expectPanes(root, ['/b', '/c']);
+
+    router.back();
+    await expectPanes(root, ['/a', '/b']);
+    router.forward();
+    await expectPanes(root, ['/b', '/c']);
+  });
+
+  it('commits redirect destinations and ignores aborted navigation', async () => {
+    const { root, router } = await mountAt('/a');
+    click(root, '/a', 'push-b');
+    await expectPanes(root, ['/a', '/b']);
+
+    click(root, '/b', 'redirect');
+
+    await expectPanes(root, ['/b', '/d?redirected=1']);
+    expect(router.currentRoute.value.fullPath).toBe('/d?redirected=1');
+
+    click(root, '/d?redirected=1', 'blocked');
+
+    await expect.poll(() => router.currentRoute.value.fullPath).toBe('/d?redirected=1');
+    expect(paneRoutes(root)).toEqual(['/b', '/d?redirected=1']);
   });
 
   it('unmounts pages as soon as they become inactive by default', async () => {
