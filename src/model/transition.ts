@@ -1,5 +1,13 @@
 import type { SplitNavigationMode, SplitRouteNode, SplitTrail } from './types';
 
+export function toSplitTrail(nodes: readonly SplitRouteNode[]): SplitTrail {
+  const [first, ...rest] = nodes;
+  if (!first) {
+    throw new RangeError('A split trail must contain at least one node');
+  }
+  return [first, ...rest];
+}
+
 export function navigateTrail(
   trail: SplitTrail,
   originId: string,
@@ -12,5 +20,5 @@ export function navigateTrail(
   }
 
   const retainedLength = mode === 'push' ? originIndex + 1 : originIndex;
-  return [...trail.slice(0, retainedLength), destination] as unknown as SplitTrail;
+  return toSplitTrail([...trail.slice(0, retainedLength), destination]);
 }
