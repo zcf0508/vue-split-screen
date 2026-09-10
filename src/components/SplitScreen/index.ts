@@ -1,26 +1,34 @@
-import type { VNode } from 'vue';
+import type { Component, VNode } from 'vue';
 import type { RouteLocationNormalizedLoaded } from 'vue-router';
-import { computed, defineComponent, h, onMounted, provide, ref, unref, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import { useNavigationListener } from '../../hooks/useNavigationListener';
-import { getRealRouteKey, routerCallbackKey, rowRouterPushKey, rowRouterReplaceKey } from '../constants';
+import type { SplitRouteNode, SplitTrail } from '../../model';
+import { cloneVNode, defineComponent, h, nextTick, onBeforeUnmount, shallowReactive, watch } from 'vue';
+import { loadRouteLocation, useRoute, useRouter } from 'vue-router';
+import { presentTrail } from '../../model';
+import { createSplitHistoryController } from '../../router';
 import { ScreenProxy } from './ScreenProxy';
 import { SplitPlaceholder } from './SplitPlaceholder';
-import { SplitScreenProxy } from './SplitScreenProxy';
-import { cloneRoute } from './utils';
 
-interface SplitSlot {
-  key: string;
+interface PageRecord {
   route: RouteLocationNormalizedLoaded;
-  slot: VNode[] | undefined;
-};
+  render: () => VNode[];
+}
 
-type SplitSlots = [SplitSlot] | [SplitSlot, SplitSlot];
+function routeProps(route: RouteLocationNormalizedLoaded): Record<string, unknown> | undefined {
+  const matched = route.matched.at(-1);
+  const config = matched?.props.default;
+  if (config === true) {
+    return route.params;
+  }
+  if (typeof config === 'function') {
+    return config(route);
+  }
+  return config || undefined;
+}
 
-interface SlotQueueItem {
-  routePath: string;
-  splitSlots: SplitSlots;
-};
+function renderRoute(route: RouteLocationNormalizedLoaded): VNode[] {
+  const component = route.matched.at(-1)?.components?.default as Component | undefined;
+  return component ? [h(component, routeProps(route))] : [];
+}
 
 export const SplitScreen = defineComponent({
   name: 'SplitScreen',
@@ -40,205 +48,87 @@ export const SplitScreen = defineComponent({
     },
   },
   setup: (props, ctx) => {
-    const allSlots = ref<SplitSlot[]>([]);
-
-    const slotQueue = ref([] as SlotQueueItem[]);
-    const queueIdx = ref(-1);
-
     const route = useRoute();
     const router = useRouter();
+    const controller = createSplitHistoryController(router);
+    const records = shallowReactive(new Map<string, PageRecord>());
 
-    const leftFlag = ref(false);
-    const pushFlag = ref(true);
-
-    function queuePush(left: boolean) {
-      const slots = [] as unknown as SplitSlots;
-      const current = unref(slotQueue.value[queueIdx.value]);
-      if (current && current.splitSlots.length === 2) {
-        if (left) {
-          slots.push(current.splitSlots[0]);
-        }
-        else {
-          slots.push(current.splitSlots[1]);
-        }
-      }
-      else if (current) {
-        slots.push(current.splitSlots[0]);
-      }
-
-      const nextSlot: SplitSlot = {
-        key: Date.now().toString(),
-        route: cloneRoute(route),
-        slot: ctx.slots.default?.(),
-      };
-      allSlots.value.push(nextSlot);
-
-      slots.push(nextSlot);
-
-      slotQueue.value.splice(queueIdx.value + 1, slotQueue.value.length - queueIdx.value - 1, {
-        routePath: route.path,
-        splitSlots: slots,
+    function captureCurrent(trail: SplitTrail) {
+      const node = trail.at(-1)!;
+      const template = (ctx.slots.default?.() ?? []).map(vnode => cloneVNode(vnode));
+      const resolved = router.resolve(node.fullPath) as unknown as RouteLocationNormalizedLoaded;
+      records.set(node.id, {
+        route: resolved,
+        render: () => template.map(vnode => cloneVNode(vnode)),
       });
-
-      queueIdx.value = slotQueue.value.length - 1;
-      leftFlag.value = false;
-      pushFlag.value = true;
     }
 
-    function queueReplace(left: boolean) {
-      const slots = [] as unknown as SplitSlots;
-      const current = slotQueue.value[queueIdx.value];
-      if (current) {
-        if (!left) {
-          slots.push(current.splitSlots[0]);
-        }
+    async function ensureRecord(node: SplitRouteNode) {
+      if (records.has(node.id)) {
+        return;
       }
-      const nextSlot: SplitSlot = {
-        key: Date.now().toString(),
-        route: cloneRoute(route),
-        slot: ctx.slots.default?.(),
-      };
-      allSlots.value.push(nextSlot);
-
-      slots.push(nextSlot);
-
-      slotQueue.value.splice(queueIdx.value, slotQueue.value.length - queueIdx.value, {
-        routePath: route.path,
-        splitSlots: slots,
-      });
-
-      queueIdx.value = slotQueue.value.length - 1;
-      leftFlag.value = false;
-      pushFlag.value = true;
+      const resolved = await loadRouteLocation(router.resolve(node.fullPath));
+      if (!records.has(node.id)) {
+        records.set(node.id, {
+          route: resolved,
+          render: () => renderRoute(resolved),
+        });
+      }
     }
 
-    const navigationFlag = ref(false);
-    useNavigationListener(() => {
-      queueIdx.value += 1;
-      navigationFlag.value = true;
-      if (queueIdx.value >= slotQueue.value.length - 1) {
-        queueIdx.value = slotQueue.value.length - 1;
-      }
-    }, () => {
-      queueIdx.value -= 1;
-      navigationFlag.value = true;
-      if (queueIdx.value < 0) {
-        queueIdx.value = 0;
-      }
-    });
+    captureCurrent(controller.trail.value);
 
-    onMounted(() => {
-      queuePush(true);
-    });
+    watch(
+      [controller.trail, () => route.fullPath],
+      async ([trail]) => {
+        await nextTick();
+        captureCurrent(trail);
+        await Promise.all(trail.slice(-2).map(ensureRecord));
+      },
+      { flush: 'post' },
+    );
 
-    function routerPush(left: boolean) {
-      leftFlag.value = left;
-      pushFlag.value = true;
-    }
-    function routerReplace(left: boolean) {
-      leftFlag.value = left;
-      pushFlag.value = false;
-    }
-
-    provide(routerCallbackKey, {
-      routerPush,
-      routerReplace,
-    });
-
-    watch(() => route.path, () => {
-      setTimeout(() => {
-        if (!navigationFlag.value) {
-          if (pushFlag.value) {
-            queuePush(leftFlag.value);
-          }
-          else {
-            queueReplace(leftFlag.value);
-          }
-        }
-        navigationFlag.value = false;
-      }, 0);
-    });
-
-    provide(getRealRouteKey, () => {
-      return cloneRoute(route);
-    });
-
-    provide(rowRouterPushKey, router.push);
-    provide(rowRouterReplaceKey, router.replace);
-
-    const renderSlot = computed(() => {
-      const currentSlot = slotQueue.value[queueIdx.value];
-
-      if (!props.turnOn) {
-        const visibleKey = currentSlot?.splitSlots.at(-1)?.key;
-        return () => [
-          ...allSlots.value.map((slot, index) => h(
-            ScreenProxy,
-            {
-              key: slot.key,
-              route: slot.route,
-              left: allSlots.value.length > 1 && index === 0,
-              style: slot.key === visibleKey
-                ? ''
-                : 'display: none;',
-            },
-            () => slot.slot,
-          )),
-        ];
-      }
-      else {
-        if (currentSlot && currentSlot.splitSlots.length === 2) {
-          return () => [
-            ...allSlots.value.map((slot, index) => h(
-              ScreenProxy,
-              {
-                key: slot.key,
-                route: slot.route,
-                left: allSlots.value.length > 1 && index === 0,
-                style: currentSlot.splitSlots.map(s => s.key).includes(slot.key)
-                  ? ''
-                  : 'display: none;',
-              },
-              () => slot.slot,
-            )),
-          ];
-        }
-        else {
-          return () => [
-            ...allSlots.value.map((slot, index) => h(
-              ScreenProxy,
-              {
-                key: slot.key,
-                route: slot.route,
-                left: allSlots.value.length > 1 && index === 0,
-                style:
-                (slot.key === currentSlot?.splitSlots[0].key)
-                || (!currentSlot && index === allSlots.value.length - 1)
-                  ? ''
-                  : 'display: none;',
-              },
-              () => slot.slot,
-            )),
-            h(
-              ScreenProxy,
-              {
-                key: 'placeholder',
-              },
-              ctx.slots.placeholder
-                ? ctx.slots.placeholder
-                : h(SplitPlaceholder),
-            ),
-          ];
-        }
-      }
-    });
+    onBeforeUnmount(controller.dispose);
 
     return () => h(
-      SplitScreenProxy,
+      'div',
       {
-        splitReverse: props.splitReverse,
+        'data-split-screen': '',
+        'style': `display: flex; width: 100%; flex-direction: ${props.splitReverse ? 'row-reverse' : 'row'};`,
       },
-      renderSlot.value,
+      (() => {
+        const presentation = presentTrail(controller.trail.value);
+        const nodes = props.turnOn && presentation.companion
+          ? [presentation.companion, presentation.current]
+          : [presentation.current];
+        const panes = nodes.map((node) => {
+          const record = records.get(node.id);
+          return record
+            ? h(
+                ScreenProxy,
+                {
+                  key: node.id,
+                  node,
+                  route: record.route,
+                  controller,
+                },
+                record.render,
+              )
+            : null;
+        });
+
+        if (props.turnOn && !presentation.companion) {
+          panes.push(h(
+            'div',
+            {
+              key: 'placeholder',
+              style: 'min-width: 0; width: 0; flex: 1 1 0;',
+            },
+            ctx.slots.placeholder?.() ?? h(SplitPlaceholder),
+          ));
+        }
+        return panes;
+      })(),
     );
   },
 });

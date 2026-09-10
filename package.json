@@ -60,12 +60,8 @@
     "vue": "^3.2.0",
     "vue-router": "^4.1.0"
   },
-  "dependencies": {
-    "lodash-es": "^4.18.1"
-  },
   "devDependencies": {
     "@antfu/eslint-config": "^9.5.1",
-    "@types/lodash-es": "^4.17.12",
     "@types/node": "^22.20.1",
     "@vitejs/plugin-vue": "^6.0.8",
     "@vitest/browser-playwright": "^5.0.0",
