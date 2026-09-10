@@ -20,17 +20,20 @@ export function readSplitHistoryState(value: unknown): SplitHistoryState | undef
   }
 
   const candidate = value[splitHistoryStateKey];
+  const trail = isRecord(candidate) && Array.isArray(candidate.trail)
+    ? candidate.trail
+    : [];
   if (!isRecord(candidate)
     || candidate.version !== 1
-    || !Array.isArray(candidate.trail)
-    || candidate.trail.length === 0
-    || !candidate.trail.every(isRouteNode)) {
+    || trail.length === 0
+    || !trail.every(isRouteNode)
+    || new Set(trail.map(node => node.id)).size !== trail.length) {
     return undefined;
   }
 
   return {
     version: 1,
-    trail: toSplitTrail(candidate.trail.map(({ id, fullPath }) => ({ id, fullPath }))),
+    trail: toSplitTrail(trail.map(({ id, fullPath }) => ({ id, fullPath }))),
   };
 }
 

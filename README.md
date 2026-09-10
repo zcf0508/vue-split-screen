@@ -92,6 +92,7 @@ Each browser history entry stores a serializable trail of page nodes. Split mode
 ## Boundaries
 
 - Vue Router remains the owner of the address bar and browser navigation.
+- The default slot must directly render the `Component` supplied by `RouterView`, as shown above. Arbitrary wrappers and extra sibling nodes are not reconstructed for a companion pane.
 - `$router` and `$route` on Vue global component properties remain global. Use composables inside pane components.
 - The companion pane is presentation context. Vue Router navigation guards still receive the actual address-bar route as `from`.
 - Independent nested `RouterView` trees are not part of the stable contract.

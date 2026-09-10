@@ -2,7 +2,7 @@ import type { Component } from 'vue';
 import type { Router, RouteRecordRaw } from 'vue-router';
 import { describe, expect, it } from 'vitest';
 import { createMemoryHistory, createRouter } from 'vue-router';
-import { createSplitHistoryController } from '../../src/router';
+import { createSplitHistoryController, readSplitHistoryState } from '../../src/router';
 
 const Page: Component = { render: () => null };
 const routes: RouteRecordRaw[] = [
@@ -24,6 +24,31 @@ async function setup(): Promise<{ controller: ReturnType<typeof createSplitHisto
 }
 
 describe('split history controller', () => {
+  it('reconciles a restored tail with the route after a startup redirect', async () => {
+    const router = createRouter({ history: createMemoryHistory(), routes });
+    await router.push({
+      path: '/redirect',
+      state: {
+        __vueSplitScreen: {
+          version: 1,
+          trail: [
+            { id: 'A', fullPath: '/a' },
+            { id: 'B', fullPath: '/redirect' },
+          ],
+        },
+      },
+    });
+    await router.isReady();
+
+    const controller = createSplitHistoryController(router, () => 'unused');
+
+    expect(controller.trail.value.map(node => node.fullPath)).toEqual(['/a', '/d']);
+    expect(readSplitHistoryState(router.options.history.state)?.trail).toEqual([
+      { id: 'A', fullPath: '/a' },
+      { id: 'B', fullPath: '/d' },
+    ]);
+  });
+
   it('applies current and companion push semantics', async () => {
     const { controller } = await setup();
     await controller.navigate('A', 'push', '/b');
@@ -52,6 +77,25 @@ describe('split history controller', () => {
 
     await controller.navigate('B', 'replace', '/c');
     expect(controller.trail.value.map(node => node.fullPath)).toEqual(['/a', '/c']);
+  });
+
+  it('uses replace semantics for push locations with replace enabled', async () => {
+    const { controller } = await setup();
+    await controller.navigate('A', 'push', '/b');
+    await controller.navigate('B', 'push', '/c');
+
+    await controller.navigate('B', 'push', { path: '/d', replace: true });
+
+    expect(controller.trail.value.map(node => node.fullPath)).toEqual(['/a', '/d']);
+  });
+
+  it('resolves query-only navigation relative to its origin pane', async () => {
+    const { controller } = await setup();
+    await controller.navigate('A', 'push', '/b');
+
+    await controller.navigate('A', 'push', { query: { source: 'a' } });
+
+    expect(controller.trail.value.map(node => node.fullPath)).toEqual(['/a', '/a?source=a']);
   });
 
   it('stores the final route after a redirect', async () => {

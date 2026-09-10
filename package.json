@@ -63,7 +63,7 @@
   },
   "peerDependencies": {
     "vue": "^3.2.0",
-    "vue-router": "^4.1.0"
+    "vue-router": "^4.6.4"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^9.5.1",

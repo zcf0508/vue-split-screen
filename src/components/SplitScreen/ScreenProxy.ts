@@ -1,11 +1,14 @@
 import type { PropType } from 'vue';
 import type {
   RouteLocationNormalizedLoaded,
+  RouteLocationRaw,
+  Router,
 } from 'vue-router';
 import type { SplitRouteNode } from '../../model';
 import type { SplitHistoryController } from '../../router';
-import { computed, defineComponent, h, provide, reactive, shallowRef } from 'vue';
+import { computed, defineComponent, h, provide, reactive } from 'vue';
 import {
+  matchedRouteKey,
   routeLocationKey,
   routerKey,
   routerViewLocationKey,
@@ -46,12 +49,17 @@ export const ScreenProxy = defineComponent({
     };
 
     provide(routeLocationKey, reactive(reactiveRoute));
-    provide(routerViewLocationKey, shallowRef(props.route));
+    provide(routerViewLocationKey, routeToDisplay);
+    provide(matchedRouteKey, computed(() => props.route.matched.at(-1)));
 
+    const resolve = ((to: RouteLocationRaw, currentLocation?: RouteLocationNormalizedLoaded) => (
+      router.resolve(to, currentLocation ?? props.route)
+    )) as Router['resolve'];
     const paneRouter = {
       ...router,
       push: to => props.controller.navigate(props.node.id, 'push', to),
       replace: to => props.controller.navigate(props.node.id, 'replace', to),
+      resolve,
     } satisfies typeof router;
     provide(routerKey, paneRouter);
     provide(splitRouterKey, paneRouter);

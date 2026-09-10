@@ -31,6 +31,15 @@ describe('split history state serialization', () => {
     { [splitHistoryStateKey]: { version: 2, trail: [{ id: 'A', fullPath: '/a' }] } },
     { [splitHistoryStateKey]: { version: 1, trail: [] } },
     { [splitHistoryStateKey]: { version: 1, trail: [{ id: 'A' }] } },
+    {
+      [splitHistoryStateKey]: {
+        version: 1,
+        trail: [
+          { id: 'A', fullPath: '/a' },
+          { id: 'A', fullPath: '/b' },
+        ],
+      },
+    },
   ])('rejects malformed state %#', (state) => {
     expect(readSplitHistoryState(state)).toBeUndefined();
   });

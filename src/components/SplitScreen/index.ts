@@ -1,8 +1,8 @@
 import type { Component, VNode } from 'vue';
 import type { RouteLocationNormalizedLoaded } from 'vue-router';
 import type { SplitRouteNode, SplitTrail } from '../../model';
-import { cloneVNode, defineComponent, h, nextTick, onBeforeUnmount, shallowReactive, shallowRef, watch } from 'vue';
-import { loadRouteLocation, useRoute, useRouter } from 'vue-router';
+import { defineComponent, h, onBeforeUnmount, shallowReactive, shallowRef, watch } from 'vue';
+import { loadRouteLocation, useRouter } from 'vue-router';
 import { presentTrail, selectRetainedPageIds } from '../../model';
 import { createSplitHistoryController } from '../../router';
 import { PageHost } from './PageHost';
@@ -10,7 +10,6 @@ import { SplitPlaceholder } from './SplitPlaceholder';
 
 interface PageRecord {
   route: RouteLocationNormalizedLoaded;
-  render: () => VNode[];
 }
 
 function routeProps(route: RouteLocationNormalizedLoaded): Record<string, unknown> | undefined {
@@ -26,8 +25,22 @@ function routeProps(route: RouteLocationNormalizedLoaded): Record<string, unknow
 }
 
 function renderRoute(route: RouteLocationNormalizedLoaded): VNode[] {
-  const component = route.matched.at(-1)?.components?.default as Component | undefined;
-  return component ? [h(component, routeProps(route))] : [];
+  const matched = route.matched.at(-1);
+  const component = matched?.components?.default as Component | undefined;
+  if (!matched || !component) {
+    return [];
+  }
+
+  return [h(component, {
+    ...routeProps(route),
+    onVnodeUnmounted: (vnode: VNode) => {
+      const instance = vnode.component;
+      const publicInstance = instance?.exposed ? instance.exposeProxy : instance?.proxy;
+      if (instance?.isUnmounted && publicInstance && matched.instances.default === publicInstance) {
+        matched.instances.default = null;
+      }
+    },
+  })];
 }
 
 export const SplitScreen = defineComponent({
@@ -53,12 +66,13 @@ export const SplitScreen = defineComponent({
     },
   },
   setup: (props, ctx) => {
-    const route = useRoute();
     const router = useRouter();
     const controller = createSplitHistoryController(router);
     const records = shallowReactive(new Map<string, PageRecord>());
     const retainedIds = shallowRef<readonly string[]>([]);
     let recency: readonly string[] = [];
+    let neededIds = new Set<string>();
+    let disposed = false;
 
     function activeNodes(trail: SplitTrail): SplitRouteNode[] {
       const presentation = presentTrail(trail);
@@ -67,14 +81,10 @@ export const SplitScreen = defineComponent({
         : [presentation.current];
     }
 
-    function captureCurrent(trail: SplitTrail) {
+    function recordCurrent(trail: SplitTrail) {
       const node = trail.at(-1)!;
-      const template = (ctx.slots.default?.() ?? []).map(vnode => cloneVNode(vnode));
       const resolved = router.resolve(node.fullPath) as unknown as RouteLocationNormalizedLoaded;
-      records.set(node.id, {
-        route: resolved,
-        render: () => template.map(vnode => cloneVNode(vnode)),
-      });
+      records.set(node.id, { route: resolved });
     }
 
     async function ensureRecord(node: SplitRouteNode) {
@@ -82,19 +92,20 @@ export const SplitScreen = defineComponent({
         return;
       }
       const resolved = await loadRouteLocation(router.resolve(node.fullPath));
-      if (!records.has(node.id)) {
-        records.set(node.id, {
-          route: resolved,
-          render: () => renderRoute(resolved),
-        });
+      const stillPresent = controller.trail.value.some(
+        candidate => candidate.id === node.id && candidate.fullPath === node.fullPath,
+      );
+      if (!disposed && neededIds.has(node.id) && stillPresent && !records.has(node.id)) {
+        records.set(node.id, { route: resolved });
       }
     }
 
-    captureCurrent(controller.trail.value);
+    recordCurrent(controller.trail.value);
 
     watch(
       [controller.trail, () => props.turnOn, () => props.maxInactivePages],
       ([trail]) => {
+        recordCurrent(trail);
         const active = activeNodes(trail);
         const selection = selectRetainedPageIds(
           trail,
@@ -105,23 +116,22 @@ export const SplitScreen = defineComponent({
         recency = selection.recency;
         retainedIds.value = selection.retained;
 
-        const needed = new Set([...active.map(node => node.id), ...selection.retained]);
-        void Promise.all(trail.filter(node => needed.has(node.id)).map(ensureRecord));
+        neededIds = new Set([...active.map(node => node.id), ...selection.retained]);
+        for (const id of records.keys()) {
+          if (!neededIds.has(id)) {
+            records.delete(id);
+          }
+        }
+        void Promise.all(trail.filter(node => neededIds.has(node.id)).map(ensureRecord));
       },
       { immediate: true },
     );
 
-    watch(
-      [controller.trail, () => route.fullPath],
-      async ([trail]) => {
-        await nextTick();
-        captureCurrent(trail);
-        await Promise.all(trail.slice(-2).map(ensureRecord));
-      },
-      { flush: 'post' },
-    );
-
-    onBeforeUnmount(controller.dispose);
+    onBeforeUnmount(() => {
+      disposed = true;
+      records.clear();
+      controller.dispose();
+    });
 
     return () => h(
       'div',
@@ -135,6 +145,7 @@ export const SplitScreen = defineComponent({
         const presentation = presentTrail(trail);
         const active = activeNodes(trail);
         const activeIds = new Set(active.map(node => node.id));
+        const currentId = presentation.current.id;
         const retained = retainedIds.value
           .map(id => trail.find(node => node.id === id))
           .filter((node): node is SplitRouteNode => node !== undefined && !activeIds.has(node.id));
@@ -148,7 +159,9 @@ export const SplitScreen = defineComponent({
                   active: activeIds.has(node.id),
                   controller,
                   node,
-                  renderPage: record.render,
+                  renderPage: node.id === currentId
+                    ? () => ctx.slots.default?.() ?? []
+                    : () => renderRoute(record.route),
                   route: record.route,
                 },
               )

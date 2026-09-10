@@ -24,9 +24,10 @@ export interface SplitHistoryController {
 type NodeIdFactory = () => string;
 
 let fallbackId = 0;
+const fallbackSessionId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
 
 function defaultNodeId(): string {
-  return globalThis.crypto?.randomUUID?.() ?? `split-route-${++fallbackId}`;
+  return globalThis.crypto?.randomUUID?.() ?? `split-route-${fallbackSessionId}-${++fallbackId}`;
 }
 
 function createNode(fullPath: string, createId: NodeIdFactory): SplitRouteNode {
@@ -41,7 +42,7 @@ function initialState(route: RouteLocationNormalizedLoaded, createId: NodeIdFact
 }
 
 function withNavigationState(
-  router: Router,
+  resolved: RouteLocationNormalizedLoaded,
   to: RouteLocationRaw,
   splitState: SplitHistoryState,
 ): RouteLocationRaw {
@@ -50,17 +51,26 @@ function withNavigationState(
     splitState,
   );
 
-  if (typeof to === 'string') {
-    const resolved = router.resolve(to);
-    return {
-      path: resolved.path,
-      query: resolved.query,
-      hash: resolved.hash,
-      state,
-    };
-  }
+  return {
+    path: resolved.path,
+    query: resolved.query,
+    hash: resolved.hash,
+    ...(typeof to === 'object' ? { force: to.force, replace: to.replace } : {}),
+    state,
+  };
+}
 
-  return { ...to, state };
+function finalizeState(state: SplitHistoryState, fullPath: string): SplitHistoryState {
+  const currentNode = state.trail.at(-1)!;
+  return currentNode.fullPath === fullPath
+    ? state
+    : {
+        version: 1,
+        trail: toSplitTrail([
+          ...state.trail.slice(0, -1),
+          { ...currentNode, fullPath },
+        ]),
+      };
 }
 
 export function createSplitHistoryController(
@@ -69,10 +79,11 @@ export function createSplitHistoryController(
 ): SplitHistoryController {
   const routerHistory = router.options.history;
   const restored = readSplitHistoryState(routerHistory.state);
-  const startingState = restored ?? initialState(router.currentRoute.value, createId);
+  const candidateState = restored ?? initialState(router.currentRoute.value, createId);
+  const startingState = finalizeState(candidateState, router.currentRoute.value.fullPath);
   const trail = shallowRef(startingState.trail);
 
-  if (!restored) {
+  if (!restored || startingState !== candidateState) {
     routerHistory.replace(
       routerHistory.location,
       writeSplitHistoryState(routerHistory.state, startingState),
@@ -86,16 +97,7 @@ export function createSplitHistoryController(
 
     const historyState = readSplitHistoryState(routerHistory.state);
     const nextState = historyState ?? initialState(to, createId);
-    const currentNode = nextState.trail.at(-1)!;
-    const finalizedState: SplitHistoryState = currentNode.fullPath === to.fullPath
-      ? nextState
-      : {
-          version: 1,
-          trail: toSplitTrail([
-            ...nextState.trail.slice(0, -1),
-            { ...currentNode, fullPath: to.fullPath },
-          ]),
-        };
+    const finalizedState = finalizeState(nextState, to.fullPath);
 
     trail.value = finalizedState.trail;
     if (!historyState || finalizedState !== nextState) {
@@ -111,13 +113,23 @@ export function createSplitHistoryController(
     mode: SplitNavigationMode,
     to: RouteLocationRaw,
   ): Promise<void | NavigationFailure> {
-    const destination = createNode(router.resolve(to).fullPath, createId);
+    const origin = trail.value.find(node => node.id === originId);
+    if (!origin) {
+      throw new RangeError(`Unknown split-route node: ${originId}`);
+    }
+    const originRoute = router.resolve(origin.fullPath) as RouteLocationNormalizedLoaded;
+    const resolved = router.resolve(to, originRoute) as RouteLocationNormalizedLoaded;
+    const effectiveMode: SplitNavigationMode = mode === 'replace'
+      || (typeof to === 'object' && to.replace === true)
+      ? 'replace'
+      : 'push';
+    const destination = createNode(resolved.fullPath, createId);
     const nextState: SplitHistoryState = {
       version: 1,
-      trail: navigateTrail(trail.value, originId, destination, mode),
+      trail: navigateTrail(trail.value, originId, destination, effectiveMode),
     };
-    const target = withNavigationState(router, to, nextState);
-    const result = await router[mode](target);
+    const target = withNavigationState(resolved, to, nextState);
+    const result = await router[effectiveMode](target);
     return isNavigationFailure(result) ? result : undefined;
   }
 

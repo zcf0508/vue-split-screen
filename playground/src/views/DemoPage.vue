@@ -65,7 +65,7 @@ onUnmounted(() => lifecycle.value.unmounted++);
       </div>
       <div>
         <span>replace this pane</span>
-        <button @click="router.replace('/d?via=replace')">
+        <button @click="router.replace('/d')">
           replace with D
         </button>
       </div>
