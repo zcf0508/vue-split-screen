@@ -60,9 +60,8 @@ const copy = computed(() => ({
 <template>
   <section
     class="foldable-preview"
-    :class="{ 'is-open': isOpen, 'is-settled': settledOpen }"
+    :class="{ 'is-open': isOpen, 'is-settled': settledOpen, 'shows-inner': presentationOpen }"
     :data-fold-phase="phase"
-    :style="{ '--fold-midpoint': `${foldTiming.midpoint}ms` }"
     aria-labelledby="foldable-preview-title"
   >
     <div class="foldable-copy">
@@ -87,25 +86,34 @@ const copy = computed(() => ({
       <div class="foldable-device">
         <div class="device-stage">
           <div class="fixed-half" aria-hidden="true">
-            <div class="fixed-screen">
-              <div class="device-camera" />
+            <div class="device-surface fixed-surface">
+              <div class="screen-window fixed-screen-window">
+                <div ref="fixedClone" class="foldable-content fixed-content-clone" data-fold-clone />
+              </div>
+              <div class="screen-chrome">
+                <div class="device-camera" />
+              </div>
             </div>
-            <div ref="fixedClone" class="foldable-content fixed-content-clone" data-fold-clone />
           </div>
 
           <div class="moving-half">
-            <div class="moving-face outer-face" aria-hidden="true">
-              <div class="outer-screen">
-                <div class="cover-island" />
-                <div class="cover-home-indicator" />
-              </div>
-            </div>
-
+            <div class="moving-face outer-face" aria-hidden="true" />
             <div class="moving-face inner-face" aria-hidden="true" />
 
             <div class="content-face">
-              <div ref="screenContent" class="foldable-content">
-                <slot />
+              <div class="device-surface live-surface">
+                <div class="screen-window live-screen-window">
+                  <div ref="screenContent" class="foldable-content">
+                    <slot />
+                  </div>
+                </div>
+                <div class="screen-chrome outer-chrome" aria-hidden="true">
+                  <div class="cover-island" />
+                  <div class="cover-home-indicator" />
+                </div>
+                <div class="screen-chrome inner-chrome" aria-hidden="true">
+                  <div class="device-camera" />
+                </div>
               </div>
             </div>
           </div>
@@ -320,13 +328,13 @@ const copy = computed(() => ({
 }
 
 .outer-face {
-  transform: translateZ(5px);
+  transform: translateZ(4px);
 }
 
 .inner-face {
   overflow: visible;
   border-radius: var(--device-radius) 0 0 var(--device-radius);
-  transform: rotateY(180deg) translateZ(5px);
+  transform: rotateY(180deg) translateZ(4px);
 }
 
 .inner-face::before {
@@ -338,50 +346,90 @@ const copy = computed(() => ({
   z-index: 5;
   inset: 0;
   backface-visibility: hidden;
-  transform: translateZ(7px);
-  transform-style: preserve-3d;
-  transition: transform 0s var(--fold-midpoint);
+  transform: translateZ(5px);
+  transform-style: flat;
 }
 
-.is-open .content-face {
-  transform: rotateY(180deg) translateZ(7px);
+.shows-inner .content-face {
+  transform: rotateY(180deg) translateZ(5px);
 }
 
-.fixed-screen,
-.outer-screen {
-  position: relative;
-  height: 100%;
+.device-surface {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(145deg, oklch(52% 0.025 75deg), oklch(21% 0.02 75deg) 27%, oklch(8% 0.012 75deg));
+  border: 1px solid oklch(60% 0.025 75deg);
+  box-shadow: inset 0 0 0 1px oklch(82% 0.015 75deg / 24%);
+  backface-visibility: hidden;
+  transform-style: flat;
+}
+
+.fixed-surface {
+  z-index: 2;
+  border-radius: 0 var(--device-radius) var(--device-radius) 0;
+  transform: translateZ(5px);
+}
+
+.is-settled .fixed-surface {
+  visibility: hidden;
+}
+
+.live-surface {
+  width: 100%;
+  border-radius: 0 var(--device-radius) var(--device-radius) 0;
+}
+
+.shows-inner:not(.is-settled) .live-surface {
+  border-radius: var(--device-radius) 0 0 var(--device-radius);
+}
+
+.is-settled .live-surface {
+  width: 200%;
+  border-radius: var(--device-radius);
+}
+
+.screen-window {
+  position: absolute;
+  z-index: 0;
+  inset: 6px;
   overflow: hidden;
-  border: 1px solid oklch(76% 0.015 75deg / 20%);
-}
-
-.fixed-screen {
   background:
-    radial-gradient(circle at 35% 32%, color-mix(in srgb, oklch(71% 0.14 75deg) 22%, transparent), transparent 44%),
+    radial-gradient(circle at 68% 32%, color-mix(in srgb, oklch(71% 0.14 75deg) 18%, transparent), transparent 44%),
     linear-gradient(145deg, oklch(23% 0.025 38deg), oklch(10% 0.012 75deg));
-  border-radius: 0 var(--screen-radius) var(--screen-radius) 0;
+  border: 1px solid oklch(76% 0.015 75deg / 20%);
+  border-radius: 0 calc(var(--screen-radius) - 6px) calc(var(--screen-radius) - 6px) 0;
 }
 
-.fixed-content-clone {
+.shows-inner:not(.is-settled) .live-screen-window {
+  border-radius: calc(var(--screen-radius) - 6px) 0 0 calc(var(--screen-radius) - 6px);
+}
+
+.is-settled .live-screen-window {
+  border-radius: calc(var(--screen-radius) - 6px);
+}
+
+.screen-chrome {
   position: absolute;
   z-index: 2;
   inset: 6px;
-  overflow: hidden;
-  background: oklch(11% 0.012 75deg);
-  border-radius: 0 calc(var(--screen-radius) - 6px) calc(var(--screen-radius) - 6px) 0;
   pointer-events: none;
+}
+
+.inner-chrome {
+  display: none;
+}
+
+.shows-inner .outer-chrome {
+  display: none;
+}
+
+.shows-inner .inner-chrome {
+  display: block;
 }
 
 .foldable-preview:not(.is-open) .foldable-shadow {
   opacity: 0.72;
   transform: translateX(-25%) scaleX(0.48);
-}
-
-.outer-screen {
-  background:
-    radial-gradient(circle at 32% 70%, color-mix(in srgb, oklch(65% 0.1 215deg) 24%, transparent), transparent 46%),
-    linear-gradient(145deg, oklch(20% 0.018 215deg), oklch(10% 0.012 75deg));
-  border-radius: 0 var(--screen-radius) var(--screen-radius) 0;
 }
 
 .device-camera,
@@ -410,25 +458,16 @@ const copy = computed(() => ({
 
 .foldable-content {
   position: absolute;
-  z-index: 2;
-  top: 0;
-  left: 0;
+  z-index: 0;
+  inset: 0;
   width: 100%;
   height: 100%;
-  padding: 6px;
-  overflow: hidden;
-  background:
-    radial-gradient(circle at 72% 30%, oklch(65% 0.1 65deg / 12%), transparent 42%),
-    oklch(11% 0.012 75deg);
-  border: 1px solid oklch(76% 0.015 75deg / 20%);
-  border-radius: 0 var(--screen-radius) var(--screen-radius) 0;
-  transform: translateZ(2px);
-  transition: none;
-}
-
-.is-settled .foldable-content {
-  width: 200%;
-  border-radius: var(--screen-radius);
+  padding: 0;
+  overflow: visible;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  transform: none;
 }
 
 .foldable-preview:not(.is-settled) .content-face :deep([data-split-screen] > :nth-child(2)) {
@@ -436,12 +475,12 @@ const copy = computed(() => ({
 }
 
 .fixed-content-clone.fixed-content-clone {
-  inset: 6px;
-  width: auto;
-  height: auto;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   padding: 0;
   border: 0;
-  border-radius: 0 calc(var(--screen-radius) - 6px) calc(var(--screen-radius) - 6px) 0;
+  border-radius: 0;
   transform: none;
   transition: none;
 }
